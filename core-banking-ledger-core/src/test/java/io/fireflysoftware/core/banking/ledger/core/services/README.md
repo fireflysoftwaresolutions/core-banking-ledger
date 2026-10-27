@@ -1,237 +1,233 @@
-# Core Banking Ledger Service Tests
+# Ledger record services: test guide
 
-This directory contains the test suite for the Core Banking Ledger service implementations. The tests are organized to match the package structure of the service implementations.
+[Repository guide](../../../../../../../../../../../README.md) · [Module build](../../../../../../../../../../pom.xml)
 
-## Overview
+## Purpose and boundary
 
-The test suite provides comprehensive coverage for all service implementations in the Core Banking Ledger microservice. Each service implementation has a corresponding test class that verifies the functionality of all methods, including both success and error scenarios.
+This guide maps the authored tests beneath this directory to their source files and gives reproducible commands for reviewing their actual assertions. The test inventory below is a source inventory, not a measured coverage percentage or a record of a successful run.
 
-## Test Structure
+These package-local repository/mapping tests are distinct from the atomic-posting HTTP/PostgreSQL qualification in the web module. They do not establish account funding, payment-rail finality, cross-service TCC recovery, or production reconciliation. Follow the repository guide for the managed posting lifecycle and its separately qualified cases.
 
-The tests are organized into the following packages, mirroring the structure of the service implementations:
+## Prerequisites and fixture ownership
 
-- **card/v1**: Tests for card transaction line services
-- **category/v1**: Tests for transaction category services
-- **core/v1**: Tests for core transaction and transaction status history services
-- **deposit/v1**: Tests for deposit transaction line services
-- **directdebit/v1**: Tests for direct debit transaction line services
-- **fee/v1**: Tests for fee transaction line services
-- **interest/v1**: Tests for interest transaction line services
-- **ledger/v1**: Tests for ledger account and ledger entry services
-- **sepa/v1**: Tests for SEPA transfer transaction line services
-- **standingorder/v1**: Tests for standing order transaction line services
-- **transfer/v1**: Tests for transfer transaction line services
-- **withdrawal/v1**: Tests for withdrawal transaction line services
-- **wire/v1**: Tests for wire transfer transaction line services
+Run commands from the repository root with JDK 25 selected in both `java --version` and `mvn --version`. Resolve the matching parent/framework and reactor dependencies through your authorized Maven configuration. The listed fixture source controls the synthetic IDs, DTOs, mocked dependencies, and expected outcomes; it is not a seed script for a running bank. Read setup and teardown before extending a fixture or executing another module's integration tests.
 
-## Testing Approach
+## Run and inspect
 
-All tests follow a consistent approach:
+Run one existing class together with its reactor dependencies:
 
-1. **Mocking**: Using Mockito to mock dependencies (repositories, mappers)
-2. **Test Data Setup**: Creating test DTOs and entities in the `setUp()` method
-3. **Behavior Verification**: Using StepVerifier to test reactive streams
-4. **Mock Verification**: Verifying that mocks were called with the expected parameters
-
-## Service Test Classes
-
-### Core Services
-
-- **TransactionServiceImplTest**: Tests for transaction CRUD operations
-  - `createTransaction_Success`
-  - `getTransaction_Success`
-  - `getTransaction_NotFound`
-  - `updateTransaction_Success`
-  - `updateTransaction_NotFound`
-  - `deleteTransaction_Success`
-  - `deleteTransaction_NotFound`
-  - `filterTransactions_Success`
-
-- **TransactionStatusHistoryServiceImplTest**: Tests for transaction status history operations
-  - `listStatusHistory_Success`
-  - `createStatusHistory_Success`
-  - `getStatusHistory_Success`
-  - `getStatusHistory_NotFound`
-  - `getStatusHistory_WrongTransactionId`
-  - `updateStatusHistory_Success`
-  - `updateStatusHistory_NotFound`
-  - `updateStatusHistory_WrongTransactionId`
-  - `deleteStatusHistory_Success`
-  - `deleteStatusHistory_NotFound`
-  - `deleteStatusHistory_WrongTransactionId`
-
-### Transaction Line Services
-
-- **TransactionLineCardServiceImplTest**: Tests for card transaction line operations
-  - `getCardLine_Success`
-  - `getCardLine_NotFound`
-  - `createCardLine_Success`
-  - `createCardLine_Error`
-  - `updateCardLine_Success`
-  - `updateCardLine_NotFound`
-  - `updateCardLine_Error`
-  - `deleteCardLine_Success`
-  - `deleteCardLine_NotFound`
-
-- **TransactionLineDirectDebitServiceImplTest**: Tests for direct debit transaction line operations
-  - `getDirectDebitLine_Success`
-  - `getDirectDebitLine_NotFound`
-  - `createDirectDebitLine_Success`
-  - `updateDirectDebitLine_Success`
-  - `updateDirectDebitLine_NotFound`
-  - `deleteDirectDebitLine_Success`
-  - `deleteDirectDebitLine_NotFound`
-
-- **TransactionLineSepaTransferServiceImplTest**: Tests for SEPA transfer transaction line operations
-  - `getSepaTransferLine_Success`
-  - `getSepaTransferLine_NotFound`
-  - `createSepaTransferLine_Success`
-  - `updateSepaTransferLine_Success`
-  - `updateSepaTransferLine_NotFound`
-  - `deleteSepaTransferLine_Success`
-  - `deleteSepaTransferLine_NotFound`
-
-- **TransactionLineWireTransferServiceImplTest**: Tests for wire transfer transaction line operations
-  - `getWireTransferLine_Success`
-  - `getWireTransferLine_NotFound`
-  - `createWireTransferLine_Success`
-  - `updateWireTransferLine_Success`
-  - `updateWireTransferLine_NotFound`
-  - `deleteWireTransferLine_Success`
-  - `deleteWireTransferLine_NotFound`
-
-- **TransactionLineStandingOrderServiceImplTest**: Tests for standing order transaction line operations
-  - `getStandingOrderLine_Success`
-  - `getStandingOrderLine_NotFound`
-  - `createStandingOrderLine_Success`
-  - `updateStandingOrderLine_Success`
-  - `updateStandingOrderLine_NotFound`
-  - `deleteStandingOrderLine_Success`
-  - `deleteStandingOrderLine_NotFound`
-
-### Category Services
-
-- **TransactionCategoryServiceImplTest**: Tests for transaction category operations
-  - `listCategories_Success`
-  - `createCategory_Success`
-  - `getCategory_Success`
-  - `getCategory_NotFound`
-  - `updateCategory_Success`
-  - `updateCategory_NotFound`
-  - `deleteCategory_Success`
-
-### Ledger Services
-
-- **LedgerAccountServiceImplTest**: Tests for ledger account operations
-  - `listLedgerAccounts_Success`
-  - `filterLedgerAccounts_Success`
-  - `createLedgerAccount_Success`
-  - `getLedgerAccount_Success`
-  - `getLedgerAccount_NotFound`
-  - `updateLedgerAccount_Success`
-  - `updateLedgerAccount_NotFound`
-  - `deleteLedgerAccount_Success`
-  - `deleteLedgerAccount_NotFound`
-
-- **LedgerEntryServiceImplTest**: Tests for ledger entry operations
-  - `listLedgerEntries_Success`
-  - `createLedgerEntry_Success`
-  - `getLedgerEntry_Success`
-  - `getLedgerEntry_NotFound`
-  - `updateLedgerEntry_Success`
-  - `updateLedgerEntry_NotFound`
-  - `deleteLedgerEntry_Success`
-
-## Common Patterns and Utilities
-
-### StepVerifier
-
-All tests use the `StepVerifier` from the `reactor-test` library to test reactive streams:
-
-```
-StepVerifier.create(service.getTransaction(1L))
-        .expectNext(transactionDTO)
-        .verifyComplete();
+```sh
+mvn -B -pl core-banking-ledger-core -am test -DskipOpenApiGen \
+  -Dtest=TransactionAttachmentServiceImplTest -Dsurefire.failIfNoSpecifiedTests=false
 ```
 
-### Mock Setup
+To run that module's configured test lifecycle after inspecting all of its fixtures:
 
-Tests use Mockito to mock dependencies:
-
-```
-@Mock
-private TransactionRepository repository;
-
-@Mock
-private TransactionMapper mapper;
-
-@InjectMocks
-private TransactionServiceImpl service;
+```sh
+mvn -B -pl core-banking-ledger-core -am test -DskipOpenApiGen
 ```
 
-### Test Data Setup
+`skipOpenApiGen` prevents the parent's fixed-port API-generation startup; it does not skip tests or isolate external resources. `failIfNoSpecifiedTests=false` permits dependency modules without the selected class. Confirm that the selected class appears in `core-banking-ledger-core/target/surefire-reports/` and inspect tests, failures, errors, and skips in the XML. A missing report or skipped case is not a passing qualification. These commands were source-checked for this guide; no new product-test pass is claimed here.
 
-Test data is initialized in the `setUp()` method:
+## Source inventory
 
-```
-@BeforeEach
-void setUp() {
-    // Initialize test data
-    transactionDTO = new TransactionDTO();
-    transactionDTO.setTransactionId(1L);
-    // ... other properties
+Each entry lists the existing test method names. Names identify intent; read the linked body to see whether a collaborator, static utility, or the method itself is stubbed.
 
-    transaction = new Transaction();
-    transaction.setTransactionId(1L);
-    // ... other properties
-}
-```
+### [TransactionAttachmentServiceImplTest](attachment/TransactionAttachmentServiceImplTest.java)
 
-### Pagination and Filtering
+- `createAttachment_Success`
+- `getAttachment_Success`
+- `getAttachment_WrongTransactionId_EmptyResult`
+- `listAttachments_Success`
+- `listAttachmentsByType_Success`
 
-Some tests for pagination and filtering methods are simplified due to the complexity of mocking utility classes:
+### [TransactionLineCardServiceImplTest](card/TransactionLineCardServiceImplTest.java)
 
-```
+- `getCardLine_Success`
+- `getCardLine_NotFound`
+- `createCardLine_Success`
+- `createCardLine_Error`
+- `updateCardLine_Success`
+- `updateCardLine_NotFound`
+- `updateCardLine_Error`
+- `deleteCardLine_Success`
+- `deleteCardLine_NotFound`
+
+### [TransactionServiceImplTest](core/TransactionServiceImplTest.java)
+
+- `createTransaction_Success`
+- `getTransaction_Success`
+- `getTransaction_NotFound`
+- `updateTransaction_Success`
+- `updateTransaction_NotFound`
+- `deleteTransaction_Success`
+- `deleteTransaction_NotFound`
+- `filterTransactions_Success`
+
+### [TransactionStatusHistoryServiceImplTest](core/TransactionStatusHistoryServiceImplTest.java)
+
+- `listStatusHistory_Success`
+- `createStatusHistory_Success`
+- `getStatusHistory_Success`
+- `getStatusHistory_NotFound`
+- `getStatusHistory_WrongTransactionId`
+- `updateStatusHistory_Success`
+- `updateStatusHistory_NotFound`
+- `updateStatusHistory_WrongTransactionId`
+- `deleteStatusHistory_Success`
+- `deleteStatusHistory_NotFound`
+- `deleteStatusHistory_WrongTransactionId`
+
+### [TransactionLineDepositServiceImplTest](deposit/TransactionLineDepositServiceImplTest.java)
+
+- `getDepositLine_Success`
+- `getDepositLine_NotFound`
+- `createDepositLine_Success`
+- `createDepositLine_Error`
+- `updateDepositLine_Success`
+- `updateDepositLine_NotFound`
+- `deleteDepositLine_Success`
+- `deleteDepositLine_NotFound`
+
+### [TransactionLineDirectDebitServiceImplTest](directdebit/TransactionLineDirectDebitServiceImplTest.java)
+
+- `getDirectDebitLine_Success`
+- `getDirectDebitLine_NotFound`
+- `createDirectDebitLine_Success`
+- `updateDirectDebitLine_Success`
+- `updateDirectDebitLine_NotFound`
+- `deleteDirectDebitLine_Success`
+- `deleteDirectDebitLine_NotFound`
+
+### [TransactionLineFeeServiceImplTest](fee/TransactionLineFeeServiceImplTest.java)
+
+- `getFeeLine_Success`
+- `getFeeLine_NotFound`
+- `createFeeLine_Success`
+- `createFeeLine_Error`
+- `updateFeeLine_Success`
+- `updateFeeLine_NotFound`
+- `deleteFeeLine_Success`
+- `deleteFeeLine_NotFound`
+
+### [TransactionLineInterestServiceImplTest](interest/TransactionLineInterestServiceImplTest.java)
+
+- `getInterestLine_Success`
+- `getInterestLine_NotFound`
+- `createInterestLine_Success`
+- `createInterestLine_Error`
+- `updateInterestLine_Success`
+- `updateInterestLine_NotFound`
+- `deleteInterestLine_Success`
+- `deleteInterestLine_NotFound`
+
+### [TransactionLegServiceImplTest](leg/TransactionLegServiceImplTest.java)
+
+- `createTransactionLeg_Success`
+- `getTransactionLeg_Success`
+- `getTransactionLeg_WrongTransactionId_EmptyResult`
+- `listTransactionLegs_Success`
+- `listAccountLegs_Success`
+- `listAccountLegsByDateRange_Success`
+
+### [MoneyServiceImplTest](money/MoneyServiceImplTest.java)
+
+- `createMoney_Success`
+- `getMoney_Success`
+- `listMoney_Success`
+- `listMoneyByCurrency_Success`
+
+### [TransactionLineSepaTransferServiceImplTest](sepa/TransactionLineSepaTransferServiceImplTest.java)
+
+- `getSepaTransferLine_Success`
+- `getSepaTransferLine_NotFound`
+- `createSepaTransferLine_Success`
+- `updateSepaTransferLine_Success`
+- `updateSepaTransferLine_NotFound`
+- `deleteSepaTransferLine_Success`
+- `deleteSepaTransferLine_NotFound`
+
+### [TransactionLineStandingOrderServiceImplTest](standingorder/TransactionLineStandingOrderServiceImplTest.java)
+
+- `getStandingOrderLine_Success`
+- `getStandingOrderLine_NotFound`
+- `createStandingOrderLine_Success`
+- `updateStandingOrderLine_Success`
+- `updateStandingOrderLine_NotFound`
+- `deleteStandingOrderLine_Success`
+- `deleteStandingOrderLine_NotFound`
+
+### [StatementServiceImplTest](statement/StatementServiceImplTest.java)
+
+- `getStatement_Success`
+- `listAccountStatements_Success`
+- `listAccountSpaceStatements_Success`
+- `listAccountStatementsByDateRange_Success`
+- `listAccountSpaceStatementsByDateRange_Success`
+
+### [TransactionLineTransferServiceImplTest](transfer/TransactionLineTransferServiceImplTest.java)
+
+- `getTransferLine_Success`
+- `getTransferLine_NotFound`
+- `createTransferLine_Success`
+- `createTransferLine_Error`
+- `updateTransferLine_Success`
+- `updateTransferLine_NotFound`
+- `deleteTransferLine_Success`
+- `deleteTransferLine_NotFound`
+
+### [TransactionLineWireTransferServiceImplTest](wire/TransactionLineWireTransferServiceImplTest.java)
+
+- `getWireTransferLine_Success`
+- `getWireTransferLine_NotFound`
+- `createWireTransferLine_Success`
+- `updateWireTransferLine_Success`
+- `updateWireTransferLine_NotFound`
+- `deleteWireTransferLine_Success`
+- `deleteWireTransferLine_NotFound`
+
+### [TransactionLineWithdrawalServiceImplTest](withdrawal/TransactionLineWithdrawalServiceImplTest.java)
+
+- `getWithdrawalLine_Success`
+- `getWithdrawalLine_NotFound`
+- `createWithdrawalLine_Success`
+- `createWithdrawalLine_Error`
+- `updateWithdrawalLine_Success`
+- `updateWithdrawalLine_NotFound`
+- `deleteWithdrawalLine_Success`
+- `deleteWithdrawalLine_NotFound`
+
+## Actual source example
+
+This excerpt is `createAttachment_Success` from [TransactionAttachmentServiceImplTest](attachment/TransactionAttachmentServiceImplTest.java). Use the surrounding class's imports and fixture setup; this excerpt is not a standalone Java program.
+
+```java
 @Test
-void filterTransactions_Success() {
-    // This test is simplified due to the complexity of mocking FilterUtils
-    FilterRequest<TransactionDTO> filterRequest = new FilterRequest<>();
-    // ... simplified test implementation
+void createAttachment_Success() {
+    // Arrange
+    when(mapper.toEntity(any(TransactionAttachmentDTO.class))).thenReturn(attachmentEntity);
+    when(repository.save(any(TransactionAttachment.class))).thenReturn(Mono.just(attachmentEntity));
+    when(mapper.toDTO(any(TransactionAttachment.class))).thenReturn(attachmentDTO);
+
+    // Act & Assert
+    StepVerifier.create(service.createAttachment(transactionId, attachmentDTO))
+            .expectNext(attachmentDTO)
+            .verifyComplete();
+
+    verify(mapper).toEntity(attachmentDTO);
+    verify(repository).save(attachmentEntity);
+    verify(mapper).toDTO(attachmentEntity);
 }
 ```
 
-## Running the Tests
+## Interpret and recover
 
-To run all tests:
+- A Reactor assertion must subscribe and verify termination; constructing a `Mono` alone does not execute it. Match emitted values, empty completion, and errors to the production contract rather than converting every absence to success.
+- A repository or mapper mock verifies a local call/result, not committed database state. A stubbed service method or static filter utility does not exercise its implementation. Use real HTTP/SDK/database cases for those boundaries.
+- For a failing mock assertion, reread the production branch and fixture data before changing expected values. Do not make a test pass by manufacturing the behavior inside a save callback.
+- For dependency resolution or Java errors, verify the actual Maven runtime and matching reactor artifacts. For no matching tests, check the class name and module rather than disabling all tests.
+- Coverage requires a configured measurement run and inspected report. Neither a class list nor a successful Maven exit proves every operation, error branch, authorization rule, provider interaction, or customer journey is covered.
 
-```bash
-mvn test
-```
+## Maintain this guide
 
-To run tests for a specific service:
-
-```bash
-mvn test -Dtest=TransactionServiceImplTest
-```
-
-## Test Coverage and Maintenance
-
-The test suite aims to provide comprehensive coverage of all service methods, including both success and error scenarios. When adding new functionality to the services, corresponding tests should be added to maintain test coverage.
-
-Key areas to focus on when maintaining tests:
-
-1. **Edge Cases**: Ensure all edge cases are covered
-2. **Error Handling**: Test error scenarios thoroughly
-3. **Reactive Streams**: Verify that reactive streams behave as expected
-4. **Mock Verification**: Verify that mocks are called with the expected parameters
-
-## Notes on Reactive Testing
-
-Testing reactive services requires special attention to the asynchronous nature of the code. The `StepVerifier` API provides a way to test reactive streams in a synchronous manner, making it easier to write and understand tests.
-
-When testing reactive services, consider:
-
-1. **Completion Signals**: Verify that streams complete properly
-2. **Error Signals**: Test error handling in reactive streams
-3. **Backpressure**: Consider testing backpressure scenarios for complex streams
-4. **Concurrency**: Be aware of concurrency issues in reactive tests
+Keep the inventory and runnable class selector aligned with the linked sources. Add regression cases for changed behavior, then record the command, fixture boundary, source revision, and reports in the relevant implementation review. Preserve separate evidence for unit behavior, transport contracts, database recovery, provider sandbox behavior, and live-provider acceptance.

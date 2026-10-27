@@ -3000,6 +3000,41 @@ paths:
                 $ref: "#/components/schemas/Reservation"
       security:
       - fundsBearer: []
+  /api/v1/tenants/{tenant}/funds/reservations/{id}/monetary-receipts:
+    get:
+      tags:
+      - LedgerFunds
+      operationId: getFundsMonetaryReceipts
+      parameters:
+      - name: tenant
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-Idempotency-Key
+        in: header
+        description: "Optional retry key for scoped POST, PUT, PATCH, and DELETE response\
+          \ reuse. Safe methods ignore it. Reuse requires configured trusted identity\
+          \ and namespace; changed input returns 409. Business effects require durable\
+          \ application idempotency."
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/EvidenceView"
+      security:
+      - fundsBearer: []
   /api/v1/tenants/{tenant}/funds/reservations/by-operation/{operationId}:
     get:
       tags:
@@ -5353,6 +5388,175 @@ components:
           format: int32
       description: Represents a paginated response containing a list of items and
         pagination metadata.
+    AcceptedReserve:
+      type: object
+      properties:
+        tenant:
+          type: string
+        reservationId:
+          type: string
+          format: uuid
+        intent:
+          $ref: "#/components/schemas/Reserve"
+        intentRecordedAtEpochMillis:
+          type: integer
+          format: int64
+        expiresAtEpochMillis:
+          type: integer
+          format: int64
+        source:
+          $ref: "#/components/schemas/EnrollmentSnapshot"
+        destination:
+          $ref: "#/components/schemas/EnrollmentSnapshot"
+    AcceptedReserveEnvelope:
+      type: object
+      properties:
+        value:
+          $ref: "#/components/schemas/AcceptedReserve"
+        canonical:
+          $ref: "#/components/schemas/CanonicalForm"
+    Actor:
+      type: object
+      properties:
+        issuer:
+          type: string
+        subject:
+          type: string
+    BalanceVector:
+      type: object
+      properties:
+        bookedBefore:
+          type: number
+        heldBefore:
+          type: number
+        bookedAfter:
+          type: number
+        heldAfter:
+          type: number
+    CanonicalForm:
+      type: object
+      properties:
+        encoding:
+          type: string
+        canonical:
+          type: string
+        digest:
+          type: string
+    EnrollmentSnapshot:
+      type: object
+      properties:
+        accountId:
+          type: string
+          format: uuid
+        enrollmentId:
+          type: string
+          format: uuid
+        contractId:
+          type: string
+          format: uuid
+        currency:
+          type: string
+        currencyScale:
+          type: integer
+          format: int32
+        currencyPolicy:
+          type: string
+        kind:
+          type: string
+          enum:
+          - CUSTOMER
+          - BANK_CONTROL
+    EvidenceView:
+      type: object
+      properties:
+        evidenceStatus:
+          type: string
+          enum:
+          - RETAINED
+          - HISTORICAL_UNAVAILABLE
+        acceptedReserve:
+          $ref: "#/components/schemas/AcceptedReserveEnvelope"
+        commit:
+          $ref: "#/components/schemas/MonetaryReceiptEnvelope"
+        reversal:
+          $ref: "#/components/schemas/MonetaryReceiptEnvelope"
+        currentReservation:
+          $ref: "#/components/schemas/Reservation"
+    MonetaryReceipt:
+      type: object
+      properties:
+        receiptId:
+          type: string
+          format: uuid
+        eventId:
+          type: string
+          format: uuid
+        tenant:
+          type: string
+        reservationId:
+          type: string
+          format: uuid
+        operationId:
+          type: string
+          format: uuid
+        effectKind:
+          type: string
+          enum:
+          - COMMIT
+          - REVERSE
+        actionId:
+          type: string
+          format: uuid
+        acceptedReserve:
+          $ref: "#/components/schemas/AcceptedReserve"
+        postingId:
+          type: string
+          format: uuid
+        originalCommitReceiptId:
+          type: string
+          format: uuid
+        originalPostingId:
+          type: string
+          format: uuid
+        effectRecordedAtEpochMillis:
+          type: integer
+          format: int64
+        effect:
+          $ref: "#/components/schemas/MoneyEffect"
+        actor:
+          $ref: "#/components/schemas/Actor"
+    MonetaryReceiptEnvelope:
+      type: object
+      properties:
+        value:
+          $ref: "#/components/schemas/MonetaryReceipt"
+        canonical:
+          $ref: "#/components/schemas/CanonicalForm"
+    MoneyEffect:
+      type: object
+      properties:
+        amount:
+          type: number
+        currency:
+          type: string
+        source:
+          $ref: "#/components/schemas/EnrollmentSnapshot"
+        destination:
+          $ref: "#/components/schemas/EnrollmentSnapshot"
+        sourceMinorUnits:
+          type: string
+        destinationMinorUnits:
+          type: string
+        fromAccountId:
+          type: string
+          format: uuid
+        toAccountId:
+          type: string
+          format: uuid
+        sourceBalances:
+          $ref: "#/components/schemas/BalanceVector"
+        destinationBalances:
+          $ref: "#/components/schemas/BalanceVector"
     PaginationResponseMoneyDTO:
       type: object
       properties:

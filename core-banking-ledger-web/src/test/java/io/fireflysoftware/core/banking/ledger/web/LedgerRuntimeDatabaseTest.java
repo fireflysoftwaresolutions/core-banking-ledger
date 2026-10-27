@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+@org.springframework.context.annotation.Import(FundsTestRoles.MigrationFixture.class)
 @Testcontainers
 @SpringBootTest(classes = LedgerApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {"server.address=127.0.0.1", "firefly.eda.enabled=false"})
@@ -43,6 +44,7 @@ class LedgerRuntimeDatabaseTest {
 
     @DynamicPropertySource
     static void databaseProperties(DynamicPropertyRegistry registry) {
+        FundsTestRoles.prepare(DATABASE);
         registry.add("spring.r2dbc.url", () -> "r2dbc:postgresql://" + DATABASE.getHost() + ":"
                 + DATABASE.getMappedPort(5432) + "/" + DATABASE.getDatabaseName());
         registry.add("spring.r2dbc.username", DATABASE::getUsername);
@@ -65,25 +67,25 @@ class LedgerRuntimeDatabaseTest {
     private final ObjectMapper json = new ObjectMapper();
 
     @Autowired
-    io.fireflysoftware.core.banking.ledger.models.repositories.core.v1.TransactionRepository transactionRepository;
+    io.fireflysoftware.core.banking.ledger.models.repositories.core.TransactionRepository transactionRepository;
 
     @Autowired
-    io.fireflysoftware.core.banking.ledger.core.services.core.v1.TransactionService transactionService;
+    io.fireflysoftware.core.banking.ledger.core.services.core.TransactionService transactionService;
 
     @Autowired
-    io.fireflysoftware.core.banking.ledger.core.services.core.v1.TransactionStatusHistoryService historyService;
+    io.fireflysoftware.core.banking.ledger.core.services.core.TransactionStatusHistoryService historyService;
 
     @Autowired
-    io.fireflysoftware.core.banking.ledger.core.services.leg.v1.TransactionLegService legService;
+    io.fireflysoftware.core.banking.ledger.core.services.leg.TransactionLegService legService;
 
     @Test
     void storedTransactionEnumsMatchTheActualPostgresSchema() {
-        for (var type : io.fireflysoftware.core.banking.ledger.interfaces.enums.core.v1.TransactionTypeEnum.values()) {
-            var transaction = new io.fireflysoftware.core.banking.ledger.models.entities.core.v1.Transaction();
+        for (var type : io.fireflysoftware.core.banking.ledger.interfaces.enums.core.TransactionTypeEnum.values()) {
+            var transaction = new io.fireflysoftware.core.banking.ledger.models.entities.core.Transaction();
             transaction.setExternalReference(UUID.randomUUID().toString());
             transaction.setAccountId(UUID.randomUUID());
             transaction.setTransactionType(type);
-            transaction.setTransactionStatus(io.fireflysoftware.core.banking.ledger.interfaces.enums.core.v1.TransactionStatusEnum.POSTED);
+            transaction.setTransactionStatus(io.fireflysoftware.core.banking.ledger.interfaces.enums.core.TransactionStatusEnum.POSTED);
             transaction.setTotalAmount(new java.math.BigDecimal("1.00"));
             transaction.setCurrency("USD");
             transaction.setTransactionDate(java.time.LocalDateTime.now());
@@ -492,7 +494,7 @@ class LedgerRuntimeDatabaseTest {
     @Test
     void publicCreateMethodsStillPersistFreshServerAssignedLegacyRecords() throws Exception {
         UUID legacy = legacyServiceFixture();
-        var leg = new io.fireflysoftware.core.banking.ledger.interfaces.dtos.leg.v1.TransactionLegDTO();
+        var leg = new io.fireflysoftware.core.banking.ledger.interfaces.dtos.leg.TransactionLegDTO();
         leg.setAccountId(UUID.randomUUID());
         leg.setLegType("DEBIT");
         leg.setAmount(new java.math.BigDecimal("1.00"));
@@ -500,8 +502,8 @@ class LedgerRuntimeDatabaseTest {
         var createdLeg = legService.createTransactionLeg(legacy, leg).block(Duration.ofSeconds(10));
         assertThat(createdLeg.getTransactionLegId()).isNotNull();
         assertThat(createdLeg.getTransactionId()).isEqualTo(legacy);
-        var history = new io.fireflysoftware.core.banking.ledger.interfaces.dtos.core.v1.TransactionStatusHistoryDTO();
-        history.setStatusCode(io.fireflysoftware.core.banking.ledger.interfaces.enums.core.v1.TransactionStatusEnum.POSTED);
+        var history = new io.fireflysoftware.core.banking.ledger.interfaces.dtos.core.TransactionStatusHistoryDTO();
+        history.setStatusCode(io.fireflysoftware.core.banking.ledger.interfaces.enums.core.TransactionStatusEnum.POSTED);
         history.setStatusStartDatetime(java.time.LocalDateTime.now());
         history.setReason("Fresh synthetic legacy history");
         var createdHistory = historyService.createStatusHistory(legacy, history).block(Duration.ofSeconds(10));
@@ -518,13 +520,13 @@ class LedgerRuntimeDatabaseTest {
     }
 
     private UUID legacyServiceFixture() {
-        var header = new io.fireflysoftware.core.banking.ledger.interfaces.dtos.core.v1.TransactionDTO();
+        var header = new io.fireflysoftware.core.banking.ledger.interfaces.dtos.core.TransactionDTO();
         header.setExternalReference(UUID.randomUUID().toString());
         header.setAccountId(UUID.randomUUID());
         header.setTransactionDate(java.time.LocalDateTime.now());
         header.setValueDate(java.time.LocalDateTime.now());
-        header.setTransactionType(io.fireflysoftware.core.banking.ledger.interfaces.enums.core.v1.TransactionTypeEnum.TRANSFER);
-        header.setTransactionStatus(io.fireflysoftware.core.banking.ledger.interfaces.enums.core.v1.TransactionStatusEnum.POSTED);
+        header.setTransactionType(io.fireflysoftware.core.banking.ledger.interfaces.enums.core.TransactionTypeEnum.TRANSFER);
+        header.setTransactionStatus(io.fireflysoftware.core.banking.ledger.interfaces.enums.core.TransactionStatusEnum.POSTED);
         header.setTotalAmount(new java.math.BigDecimal("1.00"));
         header.setCurrency("USD");
         var created = transactionService.createTransaction(header).block(Duration.ofSeconds(10));

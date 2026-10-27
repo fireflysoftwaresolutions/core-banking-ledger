@@ -1,7 +1,11 @@
 package io.fireflysoftware.core.banking.ledger.models.config;
 
-import io.fireflysoftware.core.banking.ledger.interfaces.enums.core.v1.TransactionStatusEnum;
-import io.fireflysoftware.core.banking.ledger.interfaces.enums.core.v1.TransactionTypeEnum;
+import io.fireflysoftware.core.banking.ledger.interfaces.enums.core.TransactionStatusEnum;
+import io.fireflysoftware.core.banking.ledger.interfaces.enums.core.TransactionTypeEnum;
+import io.r2dbc.postgresql.codec.PostgresqlObjectId;
+import io.r2dbc.spi.Parameter;
+import io.r2dbc.spi.Parameters;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
@@ -17,16 +21,19 @@ import java.util.Locale;
 public class LedgerR2dbcConversions {
     @Bean
     public R2dbcCustomConversions r2dbcCustomConversions() {
-        return R2dbcCustomConversions.of(PostgresDialect.INSTANCE, List.of(
-                new TransactionTypeWriter(), new TransactionTypeReader(),
-                new TransactionStatusWriter(), new TransactionStatusReader()));
+        return R2dbcCustomConversions.of(
+                PostgresDialect.INSTANCE,
+                List.of(
+                        new TransactionTypeWriter(), new TransactionTypeReader(),
+                        new TransactionStatusWriter(), new TransactionStatusReader()));
     }
 
     // The original PostgreSQL enum labels are lowercase; API enum names remain uppercase.
     @WritingConverter
-    static class TransactionTypeWriter implements Converter<TransactionTypeEnum, String> {
-        public String convert(TransactionTypeEnum source) {
-            return source.name().toLowerCase(Locale.ROOT);
+    static class TransactionTypeWriter implements Converter<TransactionTypeEnum, Parameter> {
+        public Parameter convert(TransactionTypeEnum source) {
+            return Parameters.in(
+                    PostgresqlObjectId.UNSPECIFIED, source.name().toLowerCase(Locale.ROOT));
         }
     }
 
@@ -38,9 +45,10 @@ public class LedgerR2dbcConversions {
     }
 
     @WritingConverter
-    static class TransactionStatusWriter implements Converter<TransactionStatusEnum, String> {
-        public String convert(TransactionStatusEnum source) {
-            return source.name().toLowerCase(Locale.ROOT);
+    static class TransactionStatusWriter implements Converter<TransactionStatusEnum, Parameter> {
+        public Parameter convert(TransactionStatusEnum source) {
+            return Parameters.in(
+                    PostgresqlObjectId.UNSPECIFIED, source.name().toLowerCase(Locale.ROOT));
         }
     }
 

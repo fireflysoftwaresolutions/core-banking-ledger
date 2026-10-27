@@ -28,7 +28,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@org.springframework.context.annotation.Import(FundsRuntimeDatabaseTest.ClockFixture.class)
+@org.springframework.context.annotation.Import({FundsRuntimeDatabaseTest.ClockFixture.class,FundsTestRoles.MigrationFixture.class})
 @Testcontainers
 @SpringBootTest(classes = LedgerApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {"server.address=127.0.0.1", "firefly.eda.enabled=false"})
@@ -80,7 +80,7 @@ class FundsRuntimeDatabaseTest {
         registry.add("spring.r2dbc.url", () -> "r2dbc:postgresql://" + DATABASE.getHost() + ":"
                 + DATABASE.getMappedPort(5432) + "/" + DATABASE.getDatabaseName());
         registry.add("spring.r2dbc.username", ()->"funds_runtime");
-        registry.add("spring.r2dbc.password", ()->"owned-disposable-runtime-password");
+        registry.add("spring.r2dbc.password", ()->FundsTestRoles.RUNTIME_PASSWORD);
         registry.add("spring.flyway.url", DATABASE::getJdbcUrl);
         registry.add("spring.flyway.user", DATABASE::getUsername);
         registry.add("spring.flyway.password", DATABASE::getPassword);
@@ -99,16 +99,16 @@ class FundsRuntimeDatabaseTest {
     private final ObjectMapper json = new ObjectMapper();
 
     @Autowired
-    io.fireflysoftware.core.banking.ledger.models.repositories.core.v1.TransactionRepository transactionRepository;
+    io.fireflysoftware.core.banking.ledger.models.repositories.core.TransactionRepository transactionRepository;
 
     @Autowired
-    io.fireflysoftware.core.banking.ledger.core.services.core.v1.TransactionService transactionService;
+    io.fireflysoftware.core.banking.ledger.core.services.core.TransactionService transactionService;
 
     @Autowired
-    io.fireflysoftware.core.banking.ledger.core.services.core.v1.TransactionStatusHistoryService historyService;
+    io.fireflysoftware.core.banking.ledger.core.services.core.TransactionStatusHistoryService historyService;
 
     @Autowired
-    io.fireflysoftware.core.banking.ledger.core.services.leg.v1.TransactionLegService legService;
+    io.fireflysoftware.core.banking.ledger.core.services.leg.TransactionLegService legService;
 
     @Test
     void managedFundsRoutesRequireTrustedIdentityBeforeEnrollment() throws Exception {
@@ -139,7 +139,9 @@ class FundsRuntimeDatabaseTest {
         assertThat(view.path("available").decimalValue()).isEqualByComparingTo("0");
         assertThatThrownBy(() -> database.sql("INSERT INTO transaction(account_id,external_reference,transaction_type,transaction_status,total_amount,currency,transaction_date) VALUES (:a,:r,'transfer','posted',1,'USD',CURRENT_TIMESTAMP)")
                 .bind("a",account).bind("r",UUID.randomUUID().toString()).fetch().rowsUpdated().block())
-                .hasMessageContaining("MANAGED_FUNDS_COMMAND_REQUIRED");
+                .hasMessageContaining("FND_NATIVE_COMMAND_REQUIRED");
+        assertThat(adminCount("SELECT count(*) FROM transaction WHERE account_id=?",account)).isZero();
+        assertThat(adminCount("SELECT count(*) FROM ledger_funds_account WHERE account_id=? AND state='BLOCKED' AND booked=0 AND held=0",account)).isEqualTo(1);
     }
 
     String path(UUID account) { return "/api/v1/tenants/owned/funds/accounts/"+account; }
@@ -200,7 +202,7 @@ class FundsRuntimeDatabaseTest {
         public java.time.Instant instant() { return now.get(); }
     }
     @org.junit.jupiter.api.BeforeEach
-    void resetFinancialClock() { CLOCK.now.set(java.time.Instant.now().truncatedTo(java.time.temporal.ChronoUnit.MICROS)); }
+    void resetReconciliationObservationClock() { CLOCK.now.set(java.time.Instant.now().truncatedTo(java.time.temporal.ChronoUnit.MICROS)); }
     UUID fundedCustomer(String amount) throws Exception {
         UUID bank=fixtureAccount("BANK_CONTROL"),customer=fixtureAccount("CUSTOMER");
         var response=call("POST","/api/v1/tenants/owned/funds/funding",json.writeValueAsString(java.util.Map.of(
@@ -251,9 +253,9 @@ class FundsRuntimeDatabaseTest {
         assertThat(balance.path("available").decimalValue()).isEqualByComparingTo("0");
     }
     @Test
-    void exactDeadlineRejectsCommitAndExpiryReleasesTheSameHoldOnce() throws Exception {
+    void databaseExpiredReservationRejectsCommitAndReleasesTheSameHoldOnce() throws Exception {
         UUID source=fundedCustomer("10"),destination=fixtureAccount("CUSTOMER");var grants=java.util.List.of(source,destination);
-        String id=reservation(source,destination,"4",5);CLOCK.now.set(CLOCK.instant().plusSeconds(5));
+        String id=reservation(source,destination,"4",1);awaitReservationExpiry(id);
         assertThat(action(id,"COMMIT",grants).statusCode()).isEqualTo(409);
         var expired=action(id,"EXPIRE",grants);assertThat(expired.statusCode()).as(expired.body()).isEqualTo(200);
         assertThat(json.readTree(expired.body()).path("state").asText()).isEqualTo("EXPIRED");
@@ -295,7 +297,52 @@ class FundsRuntimeDatabaseTest {
         assertThat(action(id,"REVERSE",grants).statusCode()).isEqualTo(200);
         assertThat(json.readTree(call("GET",path(source),null,grants,"funds:read").body()).path("booked").decimalValue()).isEqualByComparingTo("10");
         assertThat(adminString("SELECT transaction_status::text FROM transaction WHERE transaction_id=?",UUID.fromString(result.path("postingId").asText()))).isEqualTo("posted");
-        assertThatThrownBy(()->admin("UPDATE ledger_funds_event SET actor='forged' WHERE resource_id=?",UUID.fromString(id))).hasMessageContaining("IMMUTABLE_FUNDS_AUDIT");
+        String retainedAudit=adminString("SELECT jsonb_agg(to_jsonb(e) ORDER BY e.event_id)::text FROM ledger_funds_event e WHERE resource_id=?",UUID.fromString(id));
+        String retainedReceipts=adminString("SELECT jsonb_agg(to_jsonb(r) ORDER BY r.receipt_id)::text FROM ledger_funds_monetary_receipt r WHERE reservation_id=?",UUID.fromString(id));
+        assertThatThrownBy(()->admin("UPDATE ledger_funds_event SET actor='forged' WHERE resource_id=?",UUID.fromString(id))).hasMessageContaining("FND_NATIVE_COMMAND_REQUIRED");
+        assertThat(adminString("SELECT jsonb_agg(to_jsonb(e) ORDER BY e.event_id)::text FROM ledger_funds_event e WHERE resource_id=?",UUID.fromString(id))).isEqualTo(retainedAudit);
+        assertThat(adminString("SELECT jsonb_agg(to_jsonb(r) ORDER BY r.receipt_id)::text FROM ledger_funds_monetary_receipt r WHERE reservation_id=?",UUID.fromString(id))).isEqualTo(retainedReceipts);
+        assertThat(adminCount("SELECT count(*) FROM ledger_funds_account WHERE (account_id=? AND booked=10 OR account_id=? AND booked=0) AND held=0",source,destination)).isEqualTo(2);
+    }
+
+    @Test
+    void httpMonetaryEvidenceRetainsOriginalIntentExactEffectsAndCommitBytesAfterReversal() throws Exception {
+        UUID source=fundedCustomer("10"),destination=fixtureAccount("CUSTOMER");
+        var grants=java.util.List.of(source,destination);
+        String id=reservation(source,destination,"2.50",300);
+        String url="/api/v1/tenants/owned/funds/reservations/"+id+"/monetary-receipts";
+        var heldResponse=call("GET",url,null,grants,"funds:read");
+        assertThat(heldResponse.statusCode()).as(heldResponse.body()).isEqualTo(200);
+        var held=json.readTree(heldResponse.body());
+        assertThat(held.path("evidenceStatus").asText()).isEqualTo("RETAINED");
+        assertThat(held.path("commit").isNull()).isTrue();
+        assertThat(held.path("reversal").isNull()).isTrue();
+        var accepted=json.treeToValue(held.path("acceptedReserve"),io.fireflysoftware.core.banking.ledger.interfaces.dtos.funds.FundsReceiptContracts.AcceptedReserveEnvelope.class);
+        io.fireflysoftware.core.banking.ledger.interfaces.protocol.receipt.FundsReceiptCodec.verify(accepted);
+        assertThat(accepted.value().intent().amount()).isEqualByComparingTo("2.50");
+        assertThat(accepted.value().expiresAtEpochMillis()-accepted.value().intentRecordedAtEpochMillis()).isEqualTo(300000);
+        assertThat(accepted.value().intentRecordedAtEpochMillis()).isEqualTo(Long.parseLong(adminString("SELECT intent_recorded_at_epoch_millis FROM ledger_funds_reserve_intent WHERE reservation_id=?",UUID.fromString(id))));
+        assertThat(action(id,"COMMIT",grants).statusCode()).isEqualTo(200);
+        var committedResponse=call("GET",url,null,grants,"funds:read");
+        assertThat(committedResponse.statusCode()).as(committedResponse.body()).isEqualTo(200);
+        var committed=json.readTree(committedResponse.body());
+        var commit=json.treeToValue(committed.path("commit"),io.fireflysoftware.core.banking.ledger.interfaces.dtos.funds.FundsReceiptContracts.MonetaryReceiptEnvelope.class);
+        io.fireflysoftware.core.banking.ledger.interfaces.protocol.receipt.FundsReceiptCodec.verify(commit);
+        assertThat(commit.value().effect().sourceMinorUnits()).isEqualTo("250");
+        assertThat(commit.value().effect().destinationMinorUnits()).isEqualTo("250");
+        assertThat(commit.value().effect().sourceBalances().bookedAfter()).isEqualByComparingTo("7.50");
+        assertThat(commit.value().effect().sourceBalances().heldAfter()).isEqualByComparingTo("0");
+        assertThat(commit.value().effectRecordedAtEpochMillis()).isGreaterThanOrEqualTo(accepted.value().intentRecordedAtEpochMillis());
+        assertThat(action(id,"REVERSE",grants).statusCode()).isEqualTo(200);
+        var reversedResponse=call("GET",url,null,grants,"funds:read");
+        assertThat(reversedResponse.statusCode()).as(reversedResponse.body()).isEqualTo(200);
+        var reversed=json.readTree(reversedResponse.body());
+        assertThat(reversed.path("acceptedReserve")).isEqualTo(held.path("acceptedReserve"));
+        assertThat(reversed.path("commit")).isEqualTo(committed.path("commit"));
+        var reversal=json.treeToValue(reversed.path("reversal"),io.fireflysoftware.core.banking.ledger.interfaces.dtos.funds.FundsReceiptContracts.MonetaryReceiptEnvelope.class);
+        io.fireflysoftware.core.banking.ledger.interfaces.protocol.receipt.FundsReceiptCodec.verify(reversal);
+        io.fireflysoftware.core.banking.ledger.interfaces.protocol.receipt.FundsReceiptCodec.validateReversal(reversal.value(),commit.value());
+        assertThat(call("GET",url,null,java.util.List.of(source),"funds:read").statusCode()).isEqualTo(404);
     }
     @Test
     void invalidPrecisionAndOverflowLeaveNoOperationClaim() throws Exception {
@@ -323,6 +370,8 @@ class FundsRuntimeDatabaseTest {
         var privileges=database.sql("SELECT rolsuper,rolbypassrls,(SELECT pg_get_userbyid(relowner)=current_user FROM pg_class WHERE oid='transaction'::regclass) AS owner FROM pg_roles WHERE rolname=current_user")
             .map((r,m)->java.util.List.of(r.get("rolsuper",Boolean.class),r.get("rolbypassrls",Boolean.class),r.get("owner",Boolean.class))).one().block();
         assertThat(privileges).containsExactly(false,false,false);
+        assertThat(database.sql("SELECT count(*) AS n FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname LIKE 'ledger_search_%' AND (has_table_privilege(current_user,c.oid,'INSERT') OR has_table_privilege(current_user,c.oid,'UPDATE') OR has_table_privilege(current_user,c.oid,'DELETE'))")
+            .map((r,m)->r.get("n",Long.class)).one().block()).isZero();
     }
     @Test
     void genericLifecycleReplayAndRepositoryReadCannotExposeManagedMoney() throws Exception {
@@ -336,12 +385,7 @@ class FundsRuntimeDatabaseTest {
     }
 
     static void prepareRuntimeRole() {
-        try(var connection=DriverManager.getConnection(DATABASE.getJdbcUrl(),DATABASE.getUsername(),DATABASE.getPassword());var statement=connection.createStatement()) {
-            statement.execute("DO $$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='funds_runtime') THEN CREATE ROLE funds_runtime LOGIN NOSUPERUSER NOBYPASSRLS PASSWORD 'owned-disposable-runtime-password'; END IF; IF NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='firefly_funds_policy_reader') THEN CREATE ROLE firefly_funds_policy_reader NOLOGIN NOSUPERUSER NOBYPASSRLS; END IF; IF NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='firefly_funds_policy_writer') THEN CREATE ROLE firefly_funds_policy_writer NOLOGIN NOSUPERUSER NOBYPASSRLS; END IF; END $$");
-            statement.execute("GRANT USAGE ON SCHEMA public TO funds_runtime");
-            statement.execute("ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT,INSERT,UPDATE,DELETE ON TABLES TO funds_runtime");
-            statement.execute("ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE,SELECT ON SEQUENCES TO funds_runtime");
-        } catch(Exception error) { throw new IllegalStateException(error); }
+        FundsTestRoles.prepare(DATABASE);
     }
     static void admin(String sql,Object... arguments) throws Exception {
         try(var connection=DriverManager.getConnection(DATABASE.getJdbcUrl(),DATABASE.getUsername(),DATABASE.getPassword());var statement=connection.prepareStatement(sql)) {
@@ -358,7 +402,7 @@ class FundsRuntimeDatabaseTest {
             for(int i=0;i<arguments.length;i++) statement.setObject(i+1,arguments[i]);try(var result=statement.executeQuery()) { assertThat(result.next()).isTrue();return result.getString(1); }
         }
     }
-    @Autowired io.fireflysoftware.core.banking.ledger.core.services.funds.v1.FundsMoneyService fundsMoney;
+    @Autowired io.fireflysoftware.core.banking.ledger.core.services.funds.FundsMoneyService fundsMoney;
     @Test
     void forcedPoliciesAndPrivatePredicatePrivilegesAreActuallyEnforced() {
         assertThat(database.sql("SELECT bool_and(c.relrowsecurity AND c.relforcerowsecurity) AS enforced FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname IN ('transaction','transaction_leg','transaction_status_history','ledger_posting_request','ledger_funds_account','ledger_funds_reservation','ledger_funds_operation','ledger_funds_action','ledger_funds_control','ledger_funds_event','event_outbox')")
@@ -391,7 +435,7 @@ class FundsRuntimeDatabaseTest {
         admin("CREATE TRIGGER wait_"+suffix+" BEFORE INSERT ON ledger_funds_event FOR EACH ROW EXECUTE FUNCTION public.wait_"+suffix+"()");
         var principal=org.fireflyframework.security.api.domain.SecurityPrincipal.builder().subject("owned-cancellation-fixture").issuer("https://owned-funds-fixture.invalid").tenantId("owned")
                 .scopes(java.util.Set.of("funds:reserve")).claims(java.util.Map.of("exp",java.time.Instant.now().plusSeconds(300),"funds_accounts",java.util.List.of(source.toString(),destination.toString()))).build();
-        var input=new io.fireflysoftware.core.banking.ledger.interfaces.dtos.funds.v1.FundsContracts.Reserve(operation,source,destination,new java.math.BigDecimal("3"),"USD",300);
+        var input=new io.fireflysoftware.core.banking.ledger.interfaces.dtos.funds.FundsContracts.Reserve(operation,source,destination,new java.math.BigDecimal("3"),"USD",300);
         var subscription=fundsMoney.reserve(principal,"owned",input).subscribe(ignored->{},ignored->{});
         try {
             boolean waiting=false;
@@ -428,7 +472,7 @@ class FundsRuntimeDatabaseTest {
     @Test
     void boundedExpiryWorkerDiscoversDurableDueReservationsWithoutAnInMemoryTimer() throws Exception {
         UUID source=fundedCustomer("10"),destination=fixtureAccount("CUSTOMER");var grants=java.util.List.of(source,destination);
-        String id=reservation(source,destination,"4",2);CLOCK.now.set(CLOCK.instant().plusSeconds(2));
+        String id=reservation(source,destination,"4",1);awaitReservationExpiry(id);
         var response=call("POST","/api/v1/tenants/owned/funds/reservations/expiry","{\"limit\":10}",grants,"funds:expire");
         assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
         assertThat(json.readTree(response.body()).toString()).contains(id,"EXPIRED");
@@ -513,13 +557,13 @@ class FundsRuntimeDatabaseTest {
     @Test
     void pinnedDeadlineBoundsNewHoldsAndRemainsPartOfImmutableReplayIntent() throws Exception {
         UUID source=fundedCustomer("10"),destination=fixtureAccount("CUSTOMER"),operation=UUID.randomUUID();var grants=java.util.List.of(source,destination);
-        long deadline=CLOCK.instant().toEpochMilli()+1000;
+        long deadline=databaseMillis()+2000;
         var body=(com.fasterxml.jackson.databind.node.ObjectNode)json.readTree(reserveBody(operation,source,destination,"2",300));body.put("notAfterEpochMillis",deadline);
         var created=call("POST","/api/v1/tenants/owned/funds/reservations",body.toString(),grants,"funds:reserve");
         assertThat(created.statusCode()).as(created.body()).isEqualTo(201);
         var result=json.readTree(created.body());
         assertThat(java.time.Instant.parse(result.path("expiresAt").asText()).toEpochMilli()).isEqualTo(deadline);
-        CLOCK.now.set(java.time.Instant.ofEpochMilli(deadline));
+        awaitDatabaseTime(deadline);
         var replay=call("POST","/api/v1/tenants/owned/funds/reservations",body.toString(),grants,"funds:reserve");
         assertThat(replay.statusCode()).as(replay.body()).isEqualTo(201);assertThat(json.readTree(replay.body()).path("reservationId")).isEqualTo(result.path("reservationId"));
         body.put("notAfterEpochMillis",deadline+1);
@@ -527,7 +571,6 @@ class FundsRuntimeDatabaseTest {
         body.put("operationId",UUID.randomUUID().toString());body.put("notAfterEpochMillis",deadline);
         assertThat(call("POST","/api/v1/tenants/owned/funds/reservations",body.toString(),grants,"funds:reserve").statusCode()).isEqualTo(409);
         assertThat(adminCount("SELECT count(*) FROM ledger_funds_operation WHERE operation_id=?",UUID.fromString(body.path("operationId").asText()))).isZero();
-        CLOCK.now.set(CLOCK.instant().plusSeconds(600));
         assertThat(call("POST","/api/v1/tenants/owned/funds/reservations",body.toString(),grants,"funds:reserve").statusCode()).isEqualTo(409);
     }
     @Test
@@ -577,14 +620,33 @@ class FundsRuntimeDatabaseTest {
         try(var c=DriverManager.getConnection(DATABASE.getJdbcUrl(),DATABASE.getUsername(),DATABASE.getPassword());var st=c.createStatement();var rows=st.executeQuery(sql)) {rows.next();return rows.getLong(1);}
     }
 
+    long databaseMillis() throws Exception {
+        return adminScalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint");
+    }
+
+    void awaitDatabaseTime(long deadline) throws Exception {
+        long stop=System.nanoTime()+Duration.ofSeconds(10).toNanos();
+        while(databaseMillis()<deadline) {
+            assertThat(System.nanoTime()).as("owned database did not reach deadline").isLessThan(stop);
+            Thread.sleep(10);
+        }
+    }
+
+    void awaitReservationExpiry(String reservationId) throws Exception {
+        long deadline=Long.parseLong(adminString("SELECT floor(extract(epoch FROM expires_at)*1000)::bigint FROM ledger_funds_reservation WHERE reservation_id=?",UUID.fromString(reservationId)));
+        awaitDatabaseTime(deadline);
+    }
+
     @Test
     void reconciliationClosesExactAbsentIntentDurablyAndPreventsLateReserveAfterClockRollback() throws Exception {
         UUID source=fundedCustomer("10"),destination=fixtureAccount("CUSTOMER"),operation=UUID.randomUUID();var grants=java.util.List.of(source,destination);
-        long deadline=CLOCK.instant().toEpochMilli()+1000;
+        long deadline=databaseMillis()+2000;
+        CLOCK.now.set(java.time.Instant.ofEpochMilli(databaseMillis()));
         var body=(com.fasterxml.jackson.databind.node.ObjectNode)json.readTree(reserveBody(operation,source,destination,"2",300));body.put("notAfterEpochMillis",deadline);
         String url="/api/v1/tenants/owned/funds/reservations/reconciliation";
         assertThat(call("POST",url,body.toString(),grants,"funds:reconcile").statusCode()).isEqualTo(409);
-        CLOCK.now.set(java.time.Instant.ofEpochMilli(deadline));
+        awaitDatabaseTime(deadline);
+        CLOCK.now.set(java.time.Instant.ofEpochMilli(databaseMillis()));
         var response=call("POST",url,body.toString(),grants,"funds:reconcile");assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
         var receipt=json.readTree(response.body());assertThat(receipt.path("outcome").asText()).isEqualTo("ABSENT_CLOSED");
         assertThat(receipt.path("receiptId").asText()).isNotBlank();assertThat(receipt.path("reservation").isNull()).isTrue();
@@ -601,9 +663,11 @@ class FundsRuntimeDatabaseTest {
     @Test
     void reconciliationFindsAnExistingReservationAndRejectsDisjointHiddenIntent() throws Exception {
         UUID source=fundedCustomer("10"),destination=fixtureAccount("CUSTOMER"),operation=UUID.randomUUID();var grants=java.util.List.of(source,destination);
-        var body=(com.fasterxml.jackson.databind.node.ObjectNode)json.readTree(reserveBody(operation,source,destination,"2",300));body.put("notAfterEpochMillis",CLOCK.instant().toEpochMilli()+1000);
+        long deadline=databaseMillis()+2000;
+        var body=(com.fasterxml.jackson.databind.node.ObjectNode)json.readTree(reserveBody(operation,source,destination,"2",300));body.put("notAfterEpochMillis",deadline);
         var created=call("POST","/api/v1/tenants/owned/funds/reservations",body.toString(),grants,"funds:reserve");assertThat(created.statusCode()).isEqualTo(201);
-        CLOCK.now.set(CLOCK.instant().plusSeconds(2));
+        awaitDatabaseTime(deadline);
+        CLOCK.now.set(java.time.Instant.ofEpochMilli(databaseMillis()));
         String url="/api/v1/tenants/owned/funds/reservations/reconciliation";
         var found=call("POST",url,body.toString(),grants,"funds:reconcile");assertThat(found.statusCode()).as(found.body()).isEqualTo(200);
         assertThat(json.readTree(found.body()).path("outcome").asText()).isEqualTo("FOUND");
@@ -632,14 +696,18 @@ class FundsRuntimeDatabaseTest {
         var body=(com.fasterxml.jackson.databind.node.ObjectNode)json.readTree(reserveBody(operation,source,destination,"2",300));body.put("notAfterEpochMillis",CLOCK.instant().toEpochMilli());
         var closed=call("POST","/api/v1/tenants/owned/funds/reservations/reconciliation",body.toString(),grants,"funds:reconcile");assertThat(closed.statusCode()).as(closed.body()).isEqualTo(200);
         String key=adminString("SELECT closed_posting_key FROM ledger_funds_operation WHERE operation_id=?",operation);
+        String retainedClosure=adminString("SELECT to_jsonb(o)::text FROM ledger_funds_operation o WHERE operation_id=?",operation);
         assertThatThrownBy(()->admin("UPDATE ledger_funds_operation SET fingerprint=repeat('0',64) WHERE operation_id='"+operation+"'")).hasMessageContaining("IMMUTABLE_FUNDS_NO_EFFECT_RECEIPT");
         assertThatThrownBy(()->admin("DELETE FROM ledger_funds_operation WHERE operation_id='"+operation+"'")).hasMessageContaining("IMMUTABLE_FUNDS_NO_EFFECT_RECEIPT");
-        assertThatThrownBy(()->database.sql("INSERT INTO ledger_posting_request(idempotency_key,input_fingerprint) VALUES(:key,repeat('0',64))").bind("key",key).fetch().rowsUpdated().block()).hasMessageContaining("FUNDS_OPERATION_CLOSED_WITHOUT_EFFECT");
+        assertThatThrownBy(()->database.sql("INSERT INTO ledger_posting_request(idempotency_key,input_fingerprint) VALUES(:key,repeat('0',64))").bind("key",key).fetch().rowsUpdated().block()).hasMessageContaining("FND_NATIVE_COMMAND_REQUIRED");
         assertThatThrownBy(()->admin("INSERT INTO transaction(account_id,external_reference,transaction_type,transaction_status,total_amount,currency,transaction_date) VALUES('"+UUID.randomUUID()+"','"+key+"','transfer','posted',2,'USD',CURRENT_TIMESTAMP)")).hasMessageContaining("FUNDS_OPERATION_CLOSED_WITHOUT_EFFECT");
         var unrelated=legacyPosting(UUID.randomUUID(),UUID.randomUUID(),"deferred-closed-operation-backstop");assertThat(unrelated.statusCode()).as(unrelated.body()).isEqualTo(201);
         UUID posting=UUID.fromString(json.readTree(unrelated.body()).path("transaction").path("transactionId").asText());
-        assertThatThrownBy(()->admin("INSERT INTO ledger_funds_reservation(reservation_id,tenant_id,operation_id,source_account_id,destination_account_id,amount,currency,state,expires_at,posting_id) VALUES('"+UUID.randomUUID()+"','owned','"+operation+"','"+source+"','"+destination+"',2,'USD','HELD',CURRENT_TIMESTAMP,'"+posting+"')")).hasMessageContaining("RESERVATION_REQUIRES_OPEN_MATCHING_OPERATION");
+        assertThatThrownBy(()->admin("INSERT INTO ledger_funds_reservation(reservation_id,tenant_id,operation_id,source_account_id,destination_account_id,amount,currency,state,expires_at,posting_id) VALUES('"+UUID.randomUUID()+"','owned','"+operation+"','"+source+"','"+destination+"',2,'USD','HELD',CURRENT_TIMESTAMP,'"+posting+"')")).hasMessageContaining("FND_NATIVE_COMMAND_REQUIRED");
         assertThat(adminCount("SELECT COUNT(*) FROM ledger_funds_reservation WHERE operation_id=?",operation)).isZero();
+        assertThat(adminCount("SELECT count(*) FROM ledger_posting_request WHERE idempotency_key=?",key)).isZero();
+        assertThat(adminString("SELECT to_jsonb(o)::text FROM ledger_funds_operation o WHERE operation_id=?",operation)).isEqualTo(retainedClosure);
+        assertThat(adminCount("SELECT count(*) FROM ledger_funds_account WHERE account_id IN(?,?) AND booked=0 AND held=0",source,destination)).isEqualTo(2);
         assertThatThrownBy(()->database.sql("SELECT posting_key FROM funds_private.closed_posting").fetch().all().collectList().block()).isInstanceOf(org.springframework.dao.PermissionDeniedDataAccessException.class);
     }
     @Autowired org.springframework.transaction.ReactiveTransactionManager fundsTransactionManager;
