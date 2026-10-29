@@ -40,6 +40,9 @@ class FundsExpiryWorkerClockTest {
         when(reservations.findByTenantIdAndStateAndExpiresAtLessThanEqualOrderByExpiresAtAscReservationIdAsc(
                 eq("owned"), eq("HELD"), any(), any())).thenAnswer(invocation -> {
                     OffsetDateTime queryTime = invocation.getArgument(2);
+                    org.springframework.data.domain.Pageable page = invocation.getArgument(3);
+                    assertThat(page.getPageNumber()).isZero();
+                    assertThat(page.getPageSize()).isEqualTo(2);
                     return Flux.defer(() -> {
                         assertThat(active).isTrue();
                         assertThat(established).isTrue();

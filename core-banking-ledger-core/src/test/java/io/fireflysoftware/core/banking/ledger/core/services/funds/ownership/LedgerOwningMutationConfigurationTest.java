@@ -56,6 +56,7 @@ class LedgerOwningMutationConfigurationTest {
             context.register(OriginalRepositoryAdvice.class,FundsRepositories.class,FundsDatabaseContext.class);
             context.registerBean("ledgerPostingService",LedgerPostingServiceImpl.class);
             context.registerBean("fundsMoneyService",FundsMoneyServiceImpl.class);
+            context.registerBean("fundsExpiryCandidateService",FundsExpiryCandidateServiceImpl.class);
             context.registerBean(LedgerMutationTime.class,()->new LedgerMutationTime(clock,nanos));
             if(capture) context.registerBean(LedgerMutationAuditCapture.class,()->new LedgerMutationAuditCapture() {
                 public Mono<AuditEvent> capture(RootTransactionScope scope,LedgerMutation mutation) { return Mono.empty(); }
@@ -71,6 +72,7 @@ class LedgerOwningMutationConfigurationTest {
         try(var g=new Graph(false,false,false)) {
             g.context.refresh();
             assertTrue(g.context.getBeansOfType(LedgerOwningMutationService.class).isEmpty());
+            assertTrue(g.context.getBeansOfType(LedgerOwningExpiryService.class).isEmpty());
             assertTrue(AopUtils.isAopProxy(g.context.getBean("ledgerPostingService")));
             assertTrue(AopUtils.isAopProxy(g.context.getBean("fundsMoneyService")));
             assertEquals(0,g.driver.creates);
@@ -95,6 +97,7 @@ class LedgerOwningMutationConfigurationTest {
             assertSame(g.context.getBean("ledgerPostingService"),g.context.getBean(LedgerPostingService.class));
             assertSame(g.context.getBean("fundsMoneyService"),g.context.getBean(FundsMoneyService.class));
             assertEquals(0,g.driver.creates);
+            assertNotNull(g.context.getBean(LedgerOwningExpiryService.class));
             var error=assertThrows(RootTransactionException.class,()->g.context.getBean(LedgerOwningMutationService.class).fund(g.budget(),null,"tenant",null).block());
             assertTrue(error.transactionFacts().rollbackAcknowledged());
             assertEquals(1,g.driver.creates); assertEquals(1,g.driver.begins); assertEquals(1,g.driver.rollbacks); assertEquals(0,g.driver.commits); assertEquals(1,g.driver.closes);

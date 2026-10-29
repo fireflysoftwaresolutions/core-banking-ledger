@@ -34,15 +34,37 @@ operation/replay evidence and original owner authority. Native pairing must enfo
 business/audit completeness and append-only integrity in the existing transaction.
 The source bridge is not an admission or a financial readiness claim.
 
-Existing controllers and the expiry worker still call their original interfaces.
-They are not silently rerouted. The expiry worker completes its bounded candidate
-list transaction before invoking each original money action; it has separate
-per-item atomicity. Its next adoption must preserve that ordering, use an owning
-read boundary for selection and retain the original budget through every per-item
-bridge `action` call. Wrapping the whole batch in one transaction would change
-existing atomicity. HTTP/default application activation, scheduled expiry adoption,
-current owner/native coupling, native rollback/replay/restart, original producer/SDK,
-coordinated releases and financial/DORA acceptance remain open.
+`LedgerOwningExpiryService` is a separate explicit entrypoint under the same
+default-off gate. It selects one bounded candidate page inside an actual owning
+root, completes that read transaction, then calls the owning mutation `action`
+entrypoint sequentially for each selected reservation. Every item receives the
+identical caller-supplied original budget; neither selection nor an item can
+renew it. The original budget must still be live when the aggregate result is
+returned. A later refusal can withhold the batch result after earlier separately
+committed items; this API does not promise an atomic batch.
+
+The extracted `FundsExpiryCandidateService` retains the original database clock,
+HELD-state predicate, tenant filter, stable ordering and page-zero limit of one
+to 100. It does not add transaction advice: the original worker retains its
+original transaction operator, constructor and bean, and the explicit owning
+entrypoint supplies the owning selection root. Existing controllers and the
+legacy worker are not silently rerouted.
+
+The owning action bridge distinguishes only the original EXPIRE business
+`409 RESERVATION_IS_TERMINAL` refusal after observed rollback, zero commit,
+no completed success boundary and complete cleanup. Its typed
+`LedgerTerminalExpiryException` binds the reservation and deterministic action
+identity. Expiry can skip that exact refusal and continue to the next item.
+Other 409 responses, audit-layer errors with identical text, other action types,
+incomplete cleanup, expired budgets and unknown outcomes remain errors. Work
+failure capture is local to each subscription. The marker records technical
+rollback observations; it does not establish business no-effect or financial
+acceptance.
+
+HTTP/default application and scheduled expiry activation, genuine original
+caller budget provenance, current owner/native coupling, native rollback/replay/
+restart, original producer/SDK, coordinated releases and financial/DORA acceptance
+remain open.
 
 Ordinary source qualification verifies the complete existing core suite, actual
 typed repository/Spring service construction, preserved original REQUIRED advice,
@@ -51,3 +73,12 @@ refusal with one physical rollback, exhausted pre-I/O budget refusal, distinct g
 refusal and missing provider construction refusal. Controlled repository effects
 and a controlled enclosing caller in the advice regression are not durable funds
 or successful audit evidence. No native database execution is included.
+
+The expiry source controls also verify selection completion before each separate
+item root, original budget identity and exhaustion across items and final
+response, deterministic action IDs, narrow terminal handling, failed cleanup,
+per-subscription error isolation, legacy nonempty sequencing and invalid-input
+refusal before its original transaction operator. The loop controls use a
+controlled selector and business caller with real Spring REQUIRED advice and
+network-free physical-driver counters. They are not native selector, audit,
+authority or money-movement acceptance.

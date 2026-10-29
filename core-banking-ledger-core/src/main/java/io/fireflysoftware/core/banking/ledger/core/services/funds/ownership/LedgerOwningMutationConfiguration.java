@@ -4,8 +4,10 @@ package io.fireflysoftware.core.banking.ledger.core.services.funds.ownership;
 import io.fireflysoftware.core.banking.ledger.core.services.core.LedgerPostingService;
 import io.fireflysoftware.core.banking.ledger.core.services.core.impl.LedgerPostingServiceImpl;
 import io.fireflysoftware.core.banking.ledger.core.services.funds.FundsMoneyService;
+import io.fireflysoftware.core.banking.ledger.core.services.funds.FundsExpiryCandidateService;
 import io.fireflysoftware.core.banking.ledger.core.services.funds.impl.FundsMoneyServiceImpl;
 import io.fireflysoftware.core.banking.ledger.core.services.funds.ownership.impl.LedgerOwningMutationServiceImpl;
+import io.fireflysoftware.core.banking.ledger.core.services.funds.ownership.impl.LedgerOwningExpiryServiceImpl;
 import io.fireflysoftware.core.banking.ledger.models.config.LedgerOwningMutationResources;
 import io.fireflysoftware.core.banking.ledger.models.config.LedgerOwningMutationResourcesConfiguration;
 import java.time.Duration;
@@ -32,5 +34,12 @@ public class LedgerOwningMutationConfiguration {
             throw new IllegalArgumentException("Original advised Ledger services required");
         return new LedgerOwningMutationServiceImpl(resources.bounded(),postings,money,
                 resources.audit(authority,time.clock(),time.nanos()),capture,new CleanupPolicy(Duration.ofSeconds(2),Duration.ofSeconds(2)));
+    }
+    @Bean
+    LedgerOwningExpiryService ledgerOwningExpiryService(LedgerOwningMutationResources resources,
+            @Qualifier("fundsExpiryCandidateService") FundsExpiryCandidateService candidates,
+            @Qualifier("ledgerOwningMutationService") LedgerOwningMutationService mutations) {
+        return new LedgerOwningExpiryServiceImpl(resources.bounded(),candidates,mutations,
+                new CleanupPolicy(Duration.ofSeconds(2),Duration.ofSeconds(2)));
     }
 }

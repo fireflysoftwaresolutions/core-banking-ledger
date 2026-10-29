@@ -19,6 +19,7 @@ package io.fireflysoftware.core.banking.ledger.core.services.funds.impl;
 import static io.fireflysoftware.core.banking.ledger.core.services.funds.impl.FundsErrors.fail;
 
 import io.fireflysoftware.core.banking.ledger.core.services.funds.FundsMoneyService;
+import io.fireflysoftware.core.banking.ledger.core.services.funds.FundsExpiryCandidateService;
 import io.fireflysoftware.core.banking.ledger.interfaces.dtos.funds.FundsContracts.*;
 import io.fireflysoftware.core.banking.ledger.models.repositories.funds.FundsRepositories;
 
@@ -36,8 +37,7 @@ import java.util.UUID;
 
 @Service
 public final class FundsExpiryWorker {
-    private final FundsRepositories repos;
-    private final FundsDatabaseContext context;
+    private final FundsExpiryCandidateService candidates;
     private final FundsMoneyService money;
     private final TransactionalOperator transaction;
 
@@ -46,8 +46,7 @@ public final class FundsExpiryWorker {
             FundsDatabaseContext context,
             FundsMoneyService money,
             ReactiveTransactionManager manager) {
-        this.repos = repos;
-        this.context = context;
+        this.candidates = new FundsExpiryCandidateServiceImpl(repos, context);
         this.money = money;
         this.transaction = TransactionalOperator.create(manager);
     }
@@ -61,21 +60,7 @@ public final class FundsExpiryWorker {
                             || input.limit() < 1
                             || input.limit() > 100)
                         return Mono.error(fail(400, "BOUNDED_EXPIRY_BATCH_REQUIRED"));
-                    return context.establish(p, tenant, "EXPIRE", FundsPolicy.grantedAccounts(p))
-                            .then(repos.nativeOps().databaseNow())
-                            .flatMapMany(now ->
-                                    repos.reservations()
-                                            .findByTenantIdAndStateAndExpiresAtLessThanEqualOrderByExpiresAtAscReservationIdAsc(
-                                                    tenant,
-                                                    "HELD",
-                                                    now,
-                                                    org.springframework.data.domain.PageRequest.of(
-                                                            0, input.limit()))
-                                            .map(
-                                                    io.fireflysoftware.core.banking.ledger.models
-                                                                    .entities.funds.FundsReservation
-                                                            ::getReservationId))
-                            .collectList()
+                    return candidates.select(p, tenant, input)
                             .as(transaction::transactional)
                             .flatMapMany(
                                     ids ->
