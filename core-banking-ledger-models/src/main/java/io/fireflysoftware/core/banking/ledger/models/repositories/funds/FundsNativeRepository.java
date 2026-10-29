@@ -100,4 +100,15 @@ SELECT NOT r.rolsuper AND NOT r.rolbypassrls
     @Modifying
     @Query("SELECT public.fnd_assert_live_context(:tenant,:purpose,:source,:destination)")
     Mono<Void> assertLive(String tenant, String purpose, UUID source, UUID destination);
+
+    /** Requires an existing original anchor; missing authority/anchor/function must fail, never create a replacement. */
+    @Query("SELECT * FROM public.fnd_require_audit_capture(:authority,:tenant,:resourceTenant,:action,:resource,:process,:commandKey,:digest,:until)")
+    Mono<FundsAuditAnchor> requireAuditCapture(UUID authority, String tenant, UUID resourceTenant,
+            String action, UUID resource, UUID process, String commandKey, String digest,
+            java.time.OffsetDateTime until);
+
+    /** Native integrity coupling on the original transaction, not ordinary CRUD or an authority grant. */
+    @Query("SELECT public.fnd_pair_audit_capture(:nonce,:event,:sequence,:recordHash,:evidenceDigest,:replay)")
+    Mono<UUID> pairAuditCapture(UUID nonce, UUID event, long sequence, String recordHash,
+            String evidenceDigest, boolean replay);
 }

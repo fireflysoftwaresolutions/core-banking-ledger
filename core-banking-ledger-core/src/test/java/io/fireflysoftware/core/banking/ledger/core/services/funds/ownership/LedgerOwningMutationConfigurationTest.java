@@ -73,9 +73,17 @@ class LedgerOwningMutationConfigurationTest {
             g.context.refresh();
             assertTrue(g.context.getBeansOfType(LedgerOwningMutationService.class).isEmpty());
             assertTrue(g.context.getBeansOfType(LedgerOwningExpiryService.class).isEmpty());
+            assertTrue(g.context.getBeansOfType(io.fireflysoftware.core.banking.ledger.core.services.core.LedgerAuditRecordService.class).isEmpty());
             assertTrue(AopUtils.isAopProxy(g.context.getBean("ledgerPostingService")));
             assertTrue(AopUtils.isAopProxy(g.context.getBean("fundsMoneyService")));
             assertEquals(0,g.driver.creates);
+        }
+    }
+    @Test void explicitCaptureWithoutGenuineCurrentAdmissionRefusesBeforeAcquisition() {
+        try(var g=new Graph(true,false,true)) {
+            g.context.getEnvironment().getPropertySources().addFirst(new MapPropertySource("capture",Map.of("firefly.ledger.audit-capture.enabled","true")));
+            g.context.registerBean(org.fireflyframework.security.spi.SecurityContextPort.class,()->()->Mono.empty());
+            assertThrows(BeanCreationException.class,g.context::refresh);assertEquals(0,g.driver.creates);
         }
     }
     @Test void enabledWithoutOwnerCaptureRefusesAtConstructionBeforeAcquisition() {

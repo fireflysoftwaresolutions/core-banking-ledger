@@ -10,4 +10,5 @@ import java.util.UUID;
 
 public interface FundsEventRepository extends Repository<FundsEvent, UUID> {
     Mono<FundsEvent> findById(UUID id);
+    reactor.core.publisher.Flux<FundsEvent> findByTenantIdAndResourceIdAndEventTypeOrderByEventId(String tenantId, UUID resourceId, String eventType, org.springframework.data.domain.Pageable pageable);
 }

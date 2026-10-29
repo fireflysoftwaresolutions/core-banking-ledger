@@ -488,7 +488,7 @@ public class LedgerPostingServiceImpl implements LedgerPostingService {
         return new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
     }
 
-    private static String fingerprint(LedgerPostingRequestDTO request, UUID reversalOf) {
+    static String fingerprint(LedgerPostingRequestDTO request, UUID reversalOf) {
         try {
             ObjectNode input = JSON.valueToTree(request);
             input.put("reversalOf", reversalOf == null ? null : reversalOf.toString());

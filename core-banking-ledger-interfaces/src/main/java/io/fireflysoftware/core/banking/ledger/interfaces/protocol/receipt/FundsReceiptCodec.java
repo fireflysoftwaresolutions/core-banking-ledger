@@ -28,6 +28,19 @@ public final class FundsReceiptCodec {
 
     private FundsReceiptCodec() {}
 
+    /** Original operation-claim fingerprint; separate from the length-prefixed receipt protocol. */
+    public static String reserveOperationFingerprint(FundsContracts.Reserve input) {
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(
+                    java.util.stream.Stream.of("RESERVE", input.sourceAccountId(), input.destinationAccountId(),
+                            input.amount().stripTrailingZeros().toPlainString(), input.currency(), input.ttlSeconds(),
+                            input.notAfterEpochMillis()).map(String::valueOf)
+                            .collect(java.util.stream.Collectors.joining("|")).getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException error) {
+            throw new IllegalStateException(error);
+        }
+    }
+
     public static CanonicalForm canonicalIntent(String tenant, FundsContracts.Reserve intent) {
         tenant(tenant);
         require(intent != null, "Original reserve intent required");

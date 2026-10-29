@@ -31,4 +31,5 @@ public interface TransactionStatusHistoryRepository extends BaseRepository<Trans
 
     Flux<TransactionStatusHistory> findByTransactionIdOrderByStatusStartDatetimeDesc(UUID transactionId);
     Mono<Long> countByTransactionIdOrderByStatusStartDatetimeDesc(UUID transactionId);
+    Flux<TransactionStatusHistory> findByTransactionIdAndStatusCodeOrderByTransactionStatusHistoryId(UUID transactionId, io.fireflysoftware.core.banking.ledger.interfaces.enums.core.TransactionStatusEnum statusCode, Pageable pageable);
 }

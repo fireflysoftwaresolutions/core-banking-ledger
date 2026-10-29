@@ -15,6 +15,10 @@ public final class FundsReceiptCodec {
 
     private FundsReceiptCodec() {}
 
+    public static String reserveOperationFingerprint(FundsContracts.Reserve input) {
+        return io.fireflysoftware.core.banking.ledger.interfaces.protocol.receipt.FundsReceiptCodec.reserveOperationFingerprint(input);
+    }
+
     public static CanonicalForm canonicalIntent(String tenant, FundsContracts.Reserve intent) {
         return io.fireflysoftware.core.banking.ledger.interfaces.protocol.receipt.FundsReceiptCodec.canonicalIntent(tenant, intent);
     }

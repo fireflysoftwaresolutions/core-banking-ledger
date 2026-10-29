@@ -72,4 +72,5 @@ public interface TransactionLegRepository extends BaseRepository<TransactionLeg,
      * Count all legs for a specific account within a date range.
      */
     
+    Flux<TransactionLeg> findByTransactionIdOrderByTransactionLegId(UUID transactionId, Pageable pageable);
 }

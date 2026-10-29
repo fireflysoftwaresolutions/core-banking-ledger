@@ -21,7 +21,7 @@ import org.springframework.context.annotation.*;
 /** Explicit default-off bridge; original bean names, repository fragments and REQUIRED advice remain. */
 @Configuration(proxyBeanMethods=false)
 @ConditionalOnProperty(name="firefly.ledger.owning-mutations.enabled",havingValue="true")
-@Import(LedgerOwningMutationResourcesConfiguration.class)
+@Import({LedgerOwningMutationResourcesConfiguration.class, LedgerAuditCaptureConfiguration.class})
 public class LedgerOwningMutationConfiguration {
     @Bean
     LedgerOwningMutationService ledgerOwningMutationService(LedgerOwningMutationResources resources,

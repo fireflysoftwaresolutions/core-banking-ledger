@@ -847,14 +847,8 @@ public class FundsMoneyServiceImpl implements FundsMoneyService {
     }
 
     static String reservationFingerprint(Reserve input) {
-        return hash(
-                "RESERVE",
-                input.sourceAccountId(),
-                input.destinationAccountId(),
-                canonical(input.amount()),
-                input.currency(),
-                input.ttlSeconds(),
-                input.notAfterEpochMillis());
+        return io.fireflysoftware.core.banking.ledger.interfaces.protocol.receipt.FundsReceiptCodec
+                .reserveOperationFingerprint(input);
     }
 
     static String reservationIntentJson(Reserve i) {

@@ -27,8 +27,9 @@ are emitted only after acknowledged commit, complete boundary and complete clean
 The required `LedgerMutationTime` contains the same Clock and monotonic supplier
 used to create the original budget and the shared native caps.
 
-No successful capture, native coupling, current authority or time provider is
-supplied. Required providers must independently verify current authenticated actor,
+No current authority, native anchor/function implementation or time provider is
+supplied. The additive record/capture adapter below still requires those real providers.
+Required providers must independently verify current authenticated actor,
 exact String platform tenant, qualified UUID resource/legal-entity tenant, exact
 operation/replay evidence and original owner authority. Native pairing must enforce
 business/audit completeness and append-only integrity in the existing transaction.
@@ -82,3 +83,76 @@ refusal before its original transaction operator. The loop controls use a
 controlled selector and business caller with real Spring REQUIRED advice and
 network-free physical-driver counters. They are not native selector, audit,
 authority or money-movement acceptance.
+
+
+## Durable record capture prerequisite
+
+The additional default-off `firefly.ledger.audit-capture.enabled` property enables
+`LedgerAuditRecordService` and `LedgerMutationAuditCaptureImpl` only together with
+the existing owning-mutations gate. It preserves the original resource graph and
+advised services. A direct security-spi dependency uses Jafly's actual
+`SecurityContextPort`; this change supplies no principal or authority provider.
+Missing `LedgerAuditAdmission` prevents construction before connection acquisition.
+
+The typed record service reads each of the seven provisional mutations on the
+original opaque scope. It uses bounded Spring Data reads of actual managed
+posting headers, claims, balanced legs and selected history, composite funds
+operations/actions, original accepted-reserve canonicals, monetary receipts and
+funding events. Canonical receipt hashes, original reversal links, tenant,
+command, resource and account identities must agree. A successful DTO or current
+status alone cannot produce a witness. Legacy local date/time values retain the
+explicit unknown-time-zone marker. Legacy subject-only funding actors retain an
+unknown issuer. Neither becomes the audit event actor or a business occurrence
+instant. A bounded length-prefixed witness digest binds these records; Jafly's
+existing canonicalizer still owns audit event and record hashing.
+
+`LedgerAuditAdmission` must authorize the current executor and supply the qualified
+UUID resource tenant, current native authority, and original capture actor/policy.
+The String platform tenant is never parsed into a UUID. A currently authorized
+retry executor can differ from the original actor. Native `fnd_require_audit_capture`
+must validate that current authority and return an **existing** original anchor
+matching the exact witness and identities. It must never create a replacement
+anchor for a historical mutation. Absent original anchor, including replay, refuses.
+The anchor's original capture observation time is used for the capture event;
+it is not an inferred historic business occurrence time. Original actor, policy,
+event ID, observation time and causation remain unchanged on retry.
+
+The typed `fnd_pair_audit_capture` declaration receives that existing capture nonce
+and the actual shared provisional record's event ID, sequence, record hash,
+evidence digest and replay flag. Before pairing, the adapter rereads the actual
+records, current permission and existing anchor and requires full event equality.
+The returned event identity must match. Native windows only narrow the same
+original budget. Empty/error/late pairing marks that same root rollback-only.
+The `_CAPTURED` event's ACCEPTED outcome describes verified capture metadata;
+it does not claim financial acceptance or no-effect.
+
+**Native implementation remains a prerequisite.** This source adds no SQL function,
+anchor storage, role, grant, successful authority provider or seed. Both functions
+must independently enforce their exact role/transaction/tenant/finite-authority,
+existing-anchor and atomic business/audit-completeness contracts before native
+adoption can be qualified. A declaration or controlled repository response is not
+native proof. Existing shared `AuditAppendAuthority` remains independently required.
+No controller, scheduled worker, default application property or financial path is
+activated by this change.
+
+Ordinary source controls cover all seven typed mutation variants and four action
+kinds, missing/ambiguous durable records, altered canonical digest, bounded leg
+reads, missing posting/account mismatch, original actor/time preservation under a
+different currently authorized retry executor, genuine Jafly record canonicalization,
+replay budget narrowing, absent current principal/admission/original anchor/native
+function/pair refusal and late rollback. They use controlled repository/authority
+contracts with a real bounded root and no external database or HTTP execution.
+
+
+The accepted-reserve reader also requires the actual retained original RESERVE
+operation for reserve and every action. Its composite identity, source and
+destination accounts, reservation identity, kind and original operation fingerprint
+must match the accepted intent. Its posting ID remains null, exactly as the
+original reservation completion writes it; the reservation row owns the actual
+posting identity. A completed reserve cannot carry no-effect closure metadata.
+These validated operation fields are included in each reserve/action witness, so
+contradictory durable operation scope cannot reuse an unchanged audit anchor.
+The original operation fingerprint is shared through `FundsReceiptCodec` and the
+existing compatibility facade. The original Money helper delegates without changing
+its pipe-joined UTF-8 protocol, decimal normalization, or literal null deadline.
+That fingerprint remains distinct from the canonical receipt digest.
