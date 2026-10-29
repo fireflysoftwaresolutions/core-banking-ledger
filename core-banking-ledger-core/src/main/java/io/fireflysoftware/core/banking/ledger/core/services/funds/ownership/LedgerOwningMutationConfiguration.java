@@ -15,6 +15,7 @@ import org.fireflyframework.core.audit.AuditAppendAuthority;
 import org.fireflyframework.core.transaction.CleanupPolicy;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.*;
 
@@ -27,13 +28,17 @@ public class LedgerOwningMutationConfiguration {
     LedgerOwningMutationService ledgerOwningMutationService(LedgerOwningMutationResources resources,
             @Qualifier("ledgerPostingService") LedgerPostingService postings,
             @Qualifier("fundsMoneyService") FundsMoneyService money,
-            LedgerMutationAuditCapture capture, AuditAppendAuthority authority, LedgerMutationTime time) {
+            LedgerMutationAuditCapture capture, ObjectProvider<AuditAppendAuthority> authority,
+            ObjectProvider<LedgerMutationAuditAppender> callLocal, LedgerMutationTime time) {
         if(!AopUtils.isAopProxy(postings)||!AopUtils.isAopProxy(money)
                 ||AopUtils.getTargetClass(postings)!=LedgerPostingServiceImpl.class
                 ||AopUtils.getTargetClass(money)!=FundsMoneyServiceImpl.class)
             throw new IllegalArgumentException("Original advised Ledger services required");
+        var appender=callLocal.getIfAvailable();
+        if(appender!=null)return new LedgerOwningMutationServiceImpl(resources.bounded(),postings,money,appender,
+                new CleanupPolicy(Duration.ofSeconds(2),Duration.ofSeconds(2)));
         return new LedgerOwningMutationServiceImpl(resources.bounded(),postings,money,
-                resources.audit(authority,time.clock(),time.nanos()),capture,new CleanupPolicy(Duration.ofSeconds(2),Duration.ofSeconds(2)));
+                resources.audit(authority.getObject(),time.clock(),time.nanos()),capture,new CleanupPolicy(Duration.ofSeconds(2),Duration.ofSeconds(2)));
     }
     @Bean
     LedgerOwningExpiryService ledgerOwningExpiryService(LedgerOwningMutationResources resources,

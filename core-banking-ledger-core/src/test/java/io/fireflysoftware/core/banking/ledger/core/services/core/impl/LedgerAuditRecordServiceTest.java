@@ -40,10 +40,10 @@ class LedgerAuditRecordServiceTest {
     static UUID id(int n){return new UUID(0,n);}
     static final long WHEN=1700000000000L;
     static final class Driver implements ConnectionFactory {
-        int creates,commits,rollbacks,closes;
+        int creates,begins,commits,rollbacks,closes;
         final Connection c=(Connection)Proxy.newProxyInstance(getClass().getClassLoader(),new Class<?>[]{Connection.class},(p,m,a)->switch(m.getName()){
             case "isAutoCommit"->true;case "getTransactionIsolationLevel"->IsolationLevel.READ_COMMITTED;
-            case "beginTransaction"->Mono.empty();case "commitTransaction"->Mono.fromRunnable(()->commits++);case "rollbackTransaction"->Mono.fromRunnable(()->rollbacks++);case "close"->Mono.fromRunnable(()->closes++);
+            case "beginTransaction"->Mono.fromRunnable(()->begins++);case "commitTransaction"->Mono.fromRunnable(()->commits++);case "rollbackTransaction"->Mono.fromRunnable(()->rollbacks++);case "close"->Mono.fromRunnable(()->closes++);
             case "hashCode"->System.identityHashCode(p);case "equals"->p==a[0];default->Mono.empty();});
         public Publisher<? extends Connection> create(){return Mono.defer(()->{creates++;return Mono.just(c);});}public ConnectionFactoryMetadata getMetadata(){return ()->"PostgreSQL";}
     }

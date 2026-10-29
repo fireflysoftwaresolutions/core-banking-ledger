@@ -25,16 +25,26 @@ public final class LedgerOwningMutationServiceImpl implements LedgerOwningMutati
     private final BoundedRootTransaction root;
     private final LedgerPostingService postings;
     private final FundsMoneyService money;
-    private final TransactionalAuditAppender audit;
-    private final LedgerMutationAuditCapture capture;
+    private final LedgerMutationAuditAppender audit;
 
     public LedgerOwningMutationServiceImpl(BoundedR2dbcResources resources, LedgerPostingService postings,
             FundsMoneyService money, TransactionalAuditAppender audit, LedgerMutationAuditCapture capture,
             CleanupPolicy cleanup) {
+        this(resources,postings,money,legacyAudit(audit,capture),cleanup);
+    }
+    public LedgerOwningMutationServiceImpl(BoundedR2dbcResources resources, LedgerPostingService postings,
+            FundsMoneyService money, LedgerMutationAuditAppender audit, CleanupPolicy cleanup) {
         this.resources=Objects.requireNonNull(resources);
         this.root=new DefaultBoundedRootTransaction(resources,Objects.requireNonNull(cleanup));
         this.postings=Objects.requireNonNull(postings); this.money=Objects.requireNonNull(money);
-        this.audit=Objects.requireNonNull(audit); this.capture=Objects.requireNonNull(capture);
+        this.audit=Objects.requireNonNull(audit);
+    }
+    private static LedgerMutationAuditAppender legacyAudit(TransactionalAuditAppender audit, LedgerMutationAuditCapture capture) {
+        Objects.requireNonNull(audit);Objects.requireNonNull(capture);
+        return (scope,mutation)->Mono.defer(()->capture.capture(scope,mutation)).switchIfEmpty(Mono.error(unavailable()))
+                .flatMap(event->audit.append(scope,event).switchIfEmpty(Mono.error(unavailable()))
+                    .flatMap(append->Mono.defer(()->capture.pair(scope,mutation,append))
+                        .filter(event.eventId()::equals).switchIfEmpty(Mono.error(unavailable()))));
     }
     public Mono<LedgerPostingDTO> create(R2dbcOperationBudget original, LedgerPostingRequestDTO request) {
         return execute(original,()->postings.create(request),result->new LedgerMutation.Created(request,result));
@@ -70,10 +80,7 @@ public final class LedgerOwningMutationServiceImpl implements LedgerOwningMutati
                     .then(Mono.defer(work).doOnError(error->workFailure.compareAndSet(null,error)))
                     .flatMap(value->{
                         var selected=mutation.apply(value);
-                        return Mono.defer(()->capture.capture(scope,selected)).switchIfEmpty(Mono.error(unavailable()))
-                            .flatMap(event->audit.append(scope,event).switchIfEmpty(Mono.error(unavailable()))
-                                .flatMap(append->Mono.defer(()->capture.pair(scope,selected,append))
-                                    .filter(event.eventId()::equals).switchIfEmpty(Mono.error(unavailable()))))
+                        return Mono.defer(()->audit.append(scope,selected)).switchIfEmpty(Mono.error(unavailable()))
                             .thenReturn(value);
                     }))
                 .onErrorMap(RootTransactionException.class,error->

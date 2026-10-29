@@ -9,6 +9,7 @@ import java.time.*;
 import java.util.*;
 import java.util.function.*;
 import org.fireflyframework.core.audit.TransactionalAuditAppender.ProvisionalAppend;
+import org.fireflyframework.core.audit.AuditAppendAuthority;
 import org.fireflyframework.core.transaction.*;
 import org.fireflyframework.kernel.audit.*;
 import org.fireflyframework.security.api.domain.SecurityPrincipal;
@@ -31,9 +32,18 @@ public final class LedgerMutationAuditCaptureImpl implements LedgerMutationAudit
         this.nativeOps=Objects.requireNonNull(nativeOps);this.principals=Objects.requireNonNull(principals);
         this.admission=Objects.requireNonNull(admission);this.clock=Objects.requireNonNull(clock);this.nanos=Objects.requireNonNull(nanos);
     }
-    private record Frame(AuditEvent event, UUID nonce) {}
+    private record Frame(AuditEvent event, UUID nonce, Instant validUntil) {}
     public Mono<AuditEvent> capture(RootTransactionScope scope, LedgerMutation mutation) {
         return guarded(scope,()->frame(scope,mutation).map(Frame::event));
+    }
+    Mono<AuditAppendAuthority.Permit> requireCurrentAppend(RootTransactionScope scope, LedgerMutation mutation,
+            AuditEvent expected, AuditEvent retained) {
+        return guarded(scope,()->{
+            if(!expected.equals(retained))return Mono.error(failure());
+            return frame(scope,mutation).filter(frame->frame.event().equals(expected))
+                    .switchIfEmpty(Mono.error(failure()))
+                    .map(frame->new AuditAppendAuthority.Permit(frame.event().stream(),frame.event().actor(),frame.validUntil()));
+        });
     }
     public Mono<UUID> pair(RootTransactionScope scope, LedgerMutation mutation, ProvisionalAppend append) {
         return guarded(scope,()->frame(scope,mutation).flatMap(frame->{
@@ -63,7 +73,7 @@ public final class LedgerMutationAuditCaptureImpl implements LedgerMutationAudit
                             var stream=new AuditStream(anchor.resourceTenantId(),"core-banking-ledger",evidence.resourceType(),anchor.resourceId());
                             var event=new AuditEvent(anchor.eventId(),stream,actor,evidence.action(),AuditEvent.Outcome.ACCEPTED,
                                     evidence.processId(),evidence.processId(),anchor.causationId(),Instant.ofEpochMilli(anchor.captureObservedAtEpochMillis()),evidence.digest(),anchor.originalPolicyRevision());
-                            return new Frame(event,anchor.captureNonce());
+                            return new Frame(event,anchor.captureNonce(),Instant.ofEpochMilli(anchor.nativeUntilEpochMillis()-1));
                         });
                 }));
         });

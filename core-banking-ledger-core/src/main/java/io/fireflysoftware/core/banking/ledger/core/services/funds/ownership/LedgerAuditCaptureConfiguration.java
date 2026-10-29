@@ -4,11 +4,14 @@ package io.fireflysoftware.core.banking.ledger.core.services.funds.ownership;
 import io.fireflysoftware.core.banking.ledger.core.services.core.LedgerAuditRecordService;
 import io.fireflysoftware.core.banking.ledger.core.services.core.impl.LedgerAuditRecordServiceImpl;
 import io.fireflysoftware.core.banking.ledger.core.services.funds.ownership.impl.LedgerMutationAuditCaptureImpl;
+import io.fireflysoftware.core.banking.ledger.core.services.funds.ownership.impl.LedgerMutationAuditAppenderImpl;
 import io.fireflysoftware.core.banking.ledger.models.config.LedgerOwningMutationResources;
 import io.fireflysoftware.core.banking.ledger.models.repositories.core.*;
 import io.fireflysoftware.core.banking.ledger.models.repositories.funds.FundsRepositories;
 import io.fireflysoftware.core.banking.ledger.models.repositories.leg.TransactionLegRepository;
 import org.fireflyframework.security.spi.SecurityContextPort;
+import org.fireflyframework.core.audit.AuditAppendAuthority;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.*;
 import org.springframework.context.annotation.*;
 
@@ -23,9 +26,16 @@ public class LedgerAuditCaptureConfiguration {
     }
     @Bean
     @ConditionalOnMissingBean(LedgerMutationAuditCapture.class)
-    LedgerMutationAuditCapture ledgerMutationAuditCapture(LedgerOwningMutationResources resources,
+    LedgerMutationAuditCaptureImpl ledgerMutationAuditCapture(LedgerOwningMutationResources resources,
             LedgerAuditRecordService records, FundsRepositories funds, SecurityContextPort principals,
             LedgerAuditAdmission admission, LedgerMutationTime time) {
         return new LedgerMutationAuditCaptureImpl(resources.bounded(),records,funds.nativeOps(),principals,admission,time.clock(),time.nanos());
+    }
+    @Bean
+    @ConditionalOnBean(LedgerMutationAuditCaptureImpl.class)
+    @ConditionalOnMissingBean(LedgerMutationAuditAppender.class)
+    LedgerMutationAuditAppender ledgerMutationAuditAppender(LedgerOwningMutationResources resources,
+            LedgerMutationAuditCaptureImpl capture, LedgerMutationTime time, ObjectProvider<AuditAppendAuthority> additional) {
+        return new LedgerMutationAuditAppenderImpl(resources,capture,time.clock(),time.nanos(),additional.getIfAvailable());
     }
 }

@@ -86,6 +86,29 @@ class LedgerOwningMutationConfigurationTest {
             assertThrows(BeanCreationException.class,g.context::refresh);assertEquals(0,g.driver.creates);
         }
     }
+    @Test void concreteCaptureUsesCallLocalAuthorityWithoutAnUnrelatedGlobalProvider() {
+        try(var g=new Graph(true,false,false)) {
+            g.context.getEnvironment().getPropertySources().addFirst(new MapPropertySource("capture",Map.of("firefly.ledger.audit-capture.enabled","true")));
+            g.context.registerBean(org.fireflyframework.security.spi.SecurityContextPort.class,()->()->Mono.empty());
+            g.context.registerBean(LedgerAuditAdmission.class,()->(principal,evidence)->Mono.empty());
+            assertDoesNotThrow(g.context::refresh);
+            assertNotNull(g.context.getBean(LedgerOwningMutationService.class));
+            assertTrue(g.context.getBeansOfType(AuditAppendAuthority.class).isEmpty());
+            assertTrue(AopUtils.isAopProxy(g.context.getBean("ledgerPostingService")));
+            assertTrue(AopUtils.isAopProxy(g.context.getBean("fundsMoneyService")));
+            assertEquals(0,g.driver.creates);
+        }
+    }
+    @Test void explicitlySuppliedCaptureRetainsItsExistingSharedAuthorityPath() {
+        try(var g=new Graph(true,true,true)) {
+            g.context.getEnvironment().getPropertySources().addFirst(new MapPropertySource("capture",Map.of("firefly.ledger.audit-capture.enabled","true")));
+            assertDoesNotThrow(g.context::refresh);
+            assertTrue(g.context.getBeansOfType(LedgerMutationAuditAppender.class).isEmpty());
+            assertNotNull(g.context.getBean(AuditAppendAuthority.class));
+            assertNotNull(g.context.getBean(LedgerOwningMutationService.class));
+            assertEquals(0,g.driver.creates);
+        }
+    }
     @Test void enabledWithoutOwnerCaptureRefusesAtConstructionBeforeAcquisition() {
         try(var g=new Graph(true,false,true)) {
             assertThrows(BeanCreationException.class,g.context::refresh); assertEquals(0,g.driver.creates);

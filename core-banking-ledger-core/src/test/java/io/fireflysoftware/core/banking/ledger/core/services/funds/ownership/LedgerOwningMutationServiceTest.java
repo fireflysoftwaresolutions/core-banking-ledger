@@ -130,6 +130,42 @@ class LedgerOwningMutationServiceTest {
             assertEquals(1,f.driver.creates); assertEquals(1,f.driver.begins); assertEquals(1,f.driver.commits); assertEquals(0,f.driver.rollbacks); assertEquals(1,f.driver.closes);
         }
     }
+    @Test void callLocalAppenderEntrypointPreservesTheOriginalRequiredProxyChainAndOnePhysicalCommit() {
+        try(var f=new Fixture()) {
+            var resources=BoundedR2dbcResources.verify(f.factory,f.client,f.operations,f.context.getBean(R2dbcTransactionManager.class));
+            LedgerMutationAuditAppender controlled=(scope,mutation)->f.factory.requireBoundScope(resources,scope)
+                    .then(Mono.fromRunnable(f.captures::incrementAndGet)).thenReturn(ID);
+            var service=new LedgerOwningMutationServiceImpl(resources,f.context.getBean(LedgerPostingService.class),
+                    f.context.getBean(FundsMoneyService.class),controlled,new CleanupPolicy(Duration.ofSeconds(2),Duration.ofSeconds(2)));
+            assertNotNull(service.fund(f.budget(),null,"tenant",null).block());
+            assertEquals(2,f.writes.get());assertEquals(1,f.captures.get());
+            assertEquals(1,f.driver.creates);assertEquals(1,f.driver.begins);assertEquals(1,f.driver.commits);
+            assertEquals(0,f.driver.rollbacks);assertEquals(1,f.driver.closes);
+        }
+    }
+    @Test void callLocalAppenderLateRefusalRollsBackOriginalRequiredPostingEffectsOnce() {
+        try(var f=new Fixture()) {
+            var resources=BoundedR2dbcResources.verify(f.factory,f.client,f.operations,f.context.getBean(R2dbcTransactionManager.class));
+            LedgerMutationAuditAppender unavailable=(scope,mutation)->f.factory.requireBoundScope(resources,scope)
+                    .then(Mono.error(new IllegalStateException("CURRENT_ADMISSION_REQUIRED")));
+            var service=new LedgerOwningMutationServiceImpl(resources,f.context.getBean(LedgerPostingService.class),
+                    f.context.getBean(FundsMoneyService.class),unavailable,new CleanupPolicy(Duration.ofSeconds(2),Duration.ofSeconds(2)));
+            var error=assertThrows(RootTransactionException.class,()->service.fund(f.budget(),null,"tenant",null).block());
+            assertTrue(error.transactionFacts().rollbackAcknowledged());assertEquals(2,f.writes.get());
+            assertEquals(1,f.driver.creates);assertEquals(1,f.driver.begins);assertEquals(0,f.driver.commits);
+            assertEquals(1,f.driver.rollbacks);assertEquals(1,f.driver.closes);
+        }
+    }
+    @Test void callLocalAppenderCannotTurnRollbackOnlyCompletionIntoABusinessResponse() {
+        try(var f=new Fixture()) {
+            var resources=BoundedR2dbcResources.verify(f.factory,f.client,f.operations,f.context.getBean(R2dbcTransactionManager.class));
+            LedgerMutationAuditAppender recovered=(scope,mutation)->f.factory.markBoundScopeRollbackOnly(resources,scope).thenReturn(ID);
+            var service=new LedgerOwningMutationServiceImpl(resources,f.context.getBean(LedgerPostingService.class),
+                    f.context.getBean(FundsMoneyService.class),recovered,new CleanupPolicy(Duration.ofSeconds(2),Duration.ofSeconds(2)));
+            assertThrows(IllegalStateException.class,()->service.fund(f.budget(),null,"tenant",null).block());
+            assertEquals(2,f.writes.get());assertEquals(1,f.driver.begins);assertEquals(0,f.driver.commits);assertEquals(1,f.driver.rollbacks);
+        }
+    }
     @Test void realSharedAppenderReceivesTheOriginalScopeAndUnavailableCurrentAuthorityRollsBackAllProvisionalEffects() {
         try(var f=new Fixture(true)) {
             assertThrows(RootTransactionException.class,()->f.service.fund(f.budget(),null,"tenant",null).block());

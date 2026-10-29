@@ -131,7 +131,9 @@ anchor storage, role, grant, successful authority provider or seed. Both functio
 must independently enforce their exact role/transaction/tenant/finite-authority,
 existing-anchor and atomic business/audit-completeness contracts before native
 adoption can be qualified. A declaration or controlled repository response is not
-native proof. Existing shared `AuditAppendAuthority` remains independently required.
+native proof. Custom capture adapters retain the existing separately supplied
+`AuditAppendAuthority` path. The concrete capture adapter uses the call-local
+authority described below and intersects an additional supplied authority.
 No controller, scheduled worker, default application property or financial path is
 activated by this change.
 
@@ -156,3 +158,125 @@ The original operation fingerprint is shared through `FundsReceiptCodec` and the
 existing compatibility facade. The original Money helper delegates without changing
 its pipe-joined UTF-8 protocol, decimal normalization, or literal null deadline.
 That fingerprint remains distinct from the canonical receipt digest.
+
+## Call-local append and pairing prerequisite
+
+`LedgerMutationAuditAppender` owns the capture, actual shared append and native
+pair pipeline for one mutation inside its existing owning root. The concrete
+implementation constructs the shared appender with a call-local
+`AuditAppendAuthority`; it installs no global authority bean. Before each shared
+authority check, the closure first requires the identical originally captured
+event, then rereads the real mutation records, current `LedgerAuditAdmission`
+and existing original native anchor on that exact root and resource graph.
+The full event must still match, including original actor, policy, capture time,
+causation and witness digest. Its permit ends at the verified native cap already
+used to narrow the original scope. It does not issue permission or renew a
+business receipt, original budget or original anchor.
+
+When an additional `AuditAppendAuthority` bean is supplied, both authorities
+must accept the same event, stream and original actor. The earlier deadline
+wins. A supplied deny is preserved. Each authority invocation and final pairing
+can mark only the original bound root rollback-only. An escaped closure, changed
+event, changed durable evidence, absent current permission or missing anchor
+cannot become a successful append. Pairing rereads independently after the
+shared append. The outer service still emits a result only after acknowledged
+commit and complete cleanup.
+
+The existing capture configuration selects this appender only for its concrete
+capture implementation under the existing default-off gates. A supplied custom
+capture adapter keeps the original external authority requirement. Both public
+owning-service constructors retain the original advised posting/funds beans and
+one physical transaction. No controller or scheduled worker is rerouted.
+
+The ordinary regressions include actual Spring REQUIRED proxy composition and
+physical begin/commit/rollback counters. Controlled successful append results
+exercise closure/recheck/pair behavior; they are not native audit persistence,
+authenticated permission or financial evidence. A separate refusal invokes the
+real shared appender and observes current-permission refusal before native audit
+entry. The effective database session principal has not been executed or proved
+by these driver controls.
+
+## Required original capture admission and native anchor
+
+The next admission caller is the existing `LedgerOwningMutationServiceImpl`,
+inside its original root **before** calling the advised posting or money service.
+It must obtain the current authenticated principal from the existing
+`SecurityContextPort`. For fund/reserve/action, this must equal the explicit
+`SecurityPrincipal` passed to `FundsMoneyService`; posting calls must use that
+same verified context rather than a returned posting DTO or a retained actor.
+The original caller-observed budget continues through this phase and all later
+work. `FundsDatabaseContext` and its existing `FundsPolicy.require` scope,
+account and finite-token checks remain necessary; they do not by themselves
+authorize an immutable audit capture.
+
+The required current owner admission provider is `LedgerAuditAdmission`, not
+an audit event or generic logging adapter. Its production implementation is
+still absent. Before a first-capture operation can be added, this provider needs
+an authenticated native issuance contract for the exact original command and
+current owner policy decision. It must obtain the UUID resource/legal-entity
+tenant from an independently qualified owner mapping. Ledger's String platform
+tenant cannot supply that UUID by parsing, and neither existing DTOs nor
+`FundsDatabaseContext` supply that missing mapping or native audit grant. No
+generic shared SPI change is required for the call-local append implemented
+here; an owner-specific first-capture admission port and its genuine issuer
+remain required.
+
+The first-capture contract must bind these facts before any new business effect:
+
+- The verified current caller, exact String tenant, qualified UUID tenant,
+  current policy revision, finite authority and original pre-I/O budget.
+- The existing command identity: create idempotency key; confirm/release posting
+  ID; reverse posting ID plus original reversal key; funding/reserve operation
+  ID; or reservation ID, action ID and exact action kind. Accepted reserve
+  fingerprints keep the existing `FundsReceiptCodec` protocol.
+- The requested resource/account/amount/currency and accepted original intent
+  appropriate to that command. Newly assigned posting IDs must be linked to
+  the protected original command, never inferred from a successful status.
+
+After the provisional mutation, a narrow native first-capture operation must
+check the actual `LedgerAuditRecordService` witness against protected native
+command/write evidence on the same transaction, backend and session principal.
+Existing funds receipt-command/row-witness machinery is relevant evidence where
+the command actually uses it; it must not be assumed to cover direct posting
+paths. Any uncovered posting path needs its own protected first-effect witness.
+Business status, `xmin`, a DTO, caller-supplied boolean or the absence of an
+anchor cannot classify a new effect versus exact replay.
+
+Only a genuinely admitted **new** effect may insert its original anchor in that
+same transaction. The immutable anchor must bind the original command,
+qualified tenants, final resource/process IDs, exact witness digest, original
+verified capture actor and policy, stable event/causation identity and original
+authority lineage. Its database `timestamptz` is capture observation time;
+legacy `LocalDateTime` and subject-only funding metadata remain explicitly
+unknown historic provenance. An audit event, outbox and exact native pairing
+must be complete before that transaction may commit. An admitted exact replay
+must find and validate the existing anchor and original audit event; it may
+never insert a replacement for missing historical evidence. A separately
+authorized retry executor may differ, while original actor, policy, event,
+capture time, receipt expiry and immutable business evidence stay unchanged.
+
+Native issuance must come through the authenticated owner admission provider
+and a separately qualified narrow issuer boundary. The ordinary business
+writer must not obtain a generic anchor/grant insertion privilege. The native
+reader and pair functions must independently check the current finite
+authorization, exact transaction/backend/session and all original bindings.
+No such issuer or anchor insertion function is implemented in this source block.
+
+The same physical session must also satisfy the native role contracts. The
+unchanged Jafly SQL hardcodes `session_user = 'firefly_audit_writer'`; Ledger's
+existing funds functions require their restricted API membership and reject
+privileged/guard access. A broad writer grant, pooled second connection or
+`SET ROLE` does not establish compatible `session_user` semantics. A qualified
+owner-specific narrow native bridge, following the exact role derivation only
+where appropriate, or a justified shared native correction must be reviewed
+first. Native qualification must record the effective session principal and
+role/ACL facts at business mutation, capture, shared enter and pair on the
+same backend/transaction; those facts cannot be supplied by the ordinary driver.
+Optional owner SQL belongs outside default Flyway until its installation and
+compatibility are qualified. Existing V1-V60 and shared roles remain unchanged.
+
+These are concrete prerequisites for a future first-capture/native gate. Until
+their genuine providers exist, the currently required admission/anchor functions
+remain absent and refusal is preserved. No Main, native database, HTTP,
+scheduler, provider, financial, DORA or released-coordinate acceptance follows
+from the call-local source implementation.
