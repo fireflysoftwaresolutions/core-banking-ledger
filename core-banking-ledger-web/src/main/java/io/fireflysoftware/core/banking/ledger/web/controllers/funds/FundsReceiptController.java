@@ -8,7 +8,6 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.UUID;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
@@ -21,8 +20,8 @@ public final class FundsReceiptController {
     public FundsReceiptController(FundsReceiptService receipts) { this.receipts = receipts; }
     @Operation(operationId = "getFundsMonetaryReceipts")
     @GetMapping
-    public Mono<EvidenceView> read(@Parameter(hidden = true) @AuthenticationPrincipal Jwt jwt,
+    public Mono<EvidenceView> read(@Parameter(hidden = true) @AuthenticationPrincipal Object authenticated,
             @PathVariable String tenant, @PathVariable UUID id) {
-        return receipts.read(FundsController.principal(jwt), tenant, id);
+        return receipts.read(FundsController.principal(authenticated), tenant, id);
     }
 }
