@@ -8,6 +8,8 @@ import org.fireflyframework.core.audit.*;
 import org.fireflyframework.core.audit.impl.SpringDataTransactionalAuditAppender;
 import org.fireflyframework.core.transaction.*;
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
+import org.springframework.data.r2dbc.repository.support.R2dbcRepositoryFactory;
+import io.fireflysoftware.core.banking.ledger.models.repositories.funds.FundsReserveCompletedWitnessRepository;
 import org.springframework.r2dbc.connection.R2dbcTransactionManager;
 import org.springframework.r2dbc.core.DatabaseClient;
 
@@ -23,6 +25,9 @@ public final class LedgerOwningMutationResources {
         this.client=client; this.operations=operations; this.manager=manager;
     }
     public BoundedR2dbcResources bounded() { return resources; }
+    public FundsReserveCompletedWitnessRepository completedReserveWitnesses() {
+        return new R2dbcRepositoryFactory(operations).getRepository(FundsReserveCompletedWitnessRepository.class);
+    }
     public TransactionalAuditAppender audit(AuditAppendAuthority authority, Clock clock, LongSupplier nanos) {
         return new SpringDataTransactionalAuditAppender(resources,client,operations,manager,authority,clock,nanos,UUID::randomUUID);
     }

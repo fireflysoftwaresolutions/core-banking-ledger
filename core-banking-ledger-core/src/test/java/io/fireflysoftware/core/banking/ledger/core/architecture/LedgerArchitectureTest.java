@@ -74,9 +74,8 @@ class LedgerArchitectureTest {
                     paths.filter(p -> p.toString().endsWith(".java"))
                             .filter(
                                     p ->
-                                            !p.getFileName()
-                                                    .toString()
-                                                    .equals("FundsNativeRepository.java"))
+                                            !List.of("FundsNativeRepository.java", "FundsReserveCompletedWitnessRepository.java")
+                                                    .contains(p.getFileName().toString()))
                             .filter(
                                     p -> {
                                         try {
@@ -98,6 +97,11 @@ class LedgerArchitectureTest {
                                 "io/fireflysoftware/core/banking/ledger/models/repositories/core/TransactionRepository.java"));
         assertThat(transactions.lines().filter(line -> line.contains("@Query(")).count())
                 .isEqualTo(2);
+        String witness = Files.readString(source.resolve(
+                "io/fireflysoftware/core/banking/ledger/models/repositories/funds/FundsReserveCompletedWitnessRepository.java"));
+        assertThat(witness).contains("@NoRepositoryBean");
+        assertThat(witness.lines().filter(line -> line.contains("@Query(")).count()).isEqualTo(1);
+        assertThat(witness).contains("@Query(\"SELECT * FROM public.fnd_require_completed_reserve(:tenant,:operation,:reservation,:source,:destination,:canonical,:digest,:fingerprint,:issuer,:subject,:until)\")");
     }
 
     @Test
