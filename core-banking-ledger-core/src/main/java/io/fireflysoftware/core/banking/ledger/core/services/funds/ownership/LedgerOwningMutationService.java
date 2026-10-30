@@ -16,5 +16,9 @@ public interface LedgerOwningMutationService {
     Mono<LedgerPostingDTO> reverse(R2dbcOperationBudget original, UUID id, String key);
     Mono<FundingReceipt> fund(R2dbcOperationBudget original, SecurityPrincipal p, String tenant, Funding request);
     Mono<Reservation> reserve(R2dbcOperationBudget original, SecurityPrincipal p, String tenant, Reserve request);
+    /** Explicit reserve-only prerequisite; no HTTP, provider or native issuer is activated by this method. */
+    default Mono<Reservation> reserveFirstCapture(R2dbcOperationBudget original, SecurityPrincipal p, String tenant, Reserve request) {
+        return Mono.error(new IllegalStateException("Real reserve first-capture admission and witness required"));
+    }
     Mono<Reservation> action(R2dbcOperationBudget original, SecurityPrincipal p, String tenant, UUID id, Command request);
 }
