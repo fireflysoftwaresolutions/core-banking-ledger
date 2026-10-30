@@ -17,6 +17,8 @@
     </properties>
 
     <dependencies>
+        <dependency><groupId>io.fireflysoftware</groupId><artifactId>core-banking-accounts-sdk</artifactId><version>26.10.6</version></dependency>
+        <dependency><groupId>org.fireflyframework</groupId><artifactId>fireflyframework-client</artifactId></dependency>
         <!-- Internal modules -->
         <dependency>
             <groupId>io.fireflysoftware</groupId>
@@ -33,6 +35,14 @@
             <artifactId>fireflyframework-starter-core</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.fireflyframework</groupId>
+            <artifactId>fireflyframework-security-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.fireflyframework</groupId>
+            <artifactId>fireflyframework-security-spi</artifactId>
+        </dependency>
         <!-- Spring WebFlux -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
