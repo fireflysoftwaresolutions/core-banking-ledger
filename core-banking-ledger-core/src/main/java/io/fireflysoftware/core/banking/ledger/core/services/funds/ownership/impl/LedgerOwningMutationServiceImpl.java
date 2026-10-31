@@ -2,6 +2,7 @@
 package io.fireflysoftware.core.banking.ledger.core.services.funds.ownership.impl;
 
 import io.fireflysoftware.core.banking.ledger.core.services.core.LedgerPostingService;
+import io.fireflysoftware.core.banking.ledger.core.services.core.LedgerPostingIntent;
 import io.fireflysoftware.core.banking.ledger.core.services.core.LedgerAuditRecordService;
 import io.fireflysoftware.core.banking.ledger.core.services.funds.FundsMoneyService;
 import io.fireflysoftware.core.banking.ledger.core.services.funds.impl.FundsPolicy;
@@ -70,7 +71,11 @@ public final class LedgerOwningMutationServiceImpl implements LedgerOwningMutati
                         .filter(event.eventId()::equals).switchIfEmpty(Mono.error(unavailable()))));
     }
     public Mono<LedgerPostingDTO> create(R2dbcOperationBudget original, LedgerPostingRequestDTO request) {
-        return execute(original,()->postings.create(request),result->new LedgerMutation.Created(request,result));
+        return Mono.defer(()->{
+            var intent=LedgerPostingIntent.capture(request);
+            return execute(original,()->postings.create(intent.request()),
+                    result->new LedgerMutation.Created(intent.request(),result));
+        });
     }
     public Mono<LedgerPostingDTO> confirm(R2dbcOperationBudget original, UUID id) {
         return execute(original,()->postings.confirm(id),result->new LedgerMutation.Confirmed(id,result));
