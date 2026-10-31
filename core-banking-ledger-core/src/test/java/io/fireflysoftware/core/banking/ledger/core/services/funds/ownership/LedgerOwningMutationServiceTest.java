@@ -188,4 +188,36 @@ class LedgerOwningMutationServiceTest {
             assertEquals(0,f.driver.creates); assertEquals(0,f.writes.get()); assertEquals(1,foreign.rollbacks);
         }
     }
+
+    @Test void owningCreateRetainsOneIntentAcrossRootWorkAndAuditProjections() {
+        try (var f = new Fixture()) {
+            var request = new LedgerPostingRequestDTO();
+            var header = new LedgerPostingHeaderDTO(); header.setTotalAmount(new java.math.BigDecimal("10"));
+            request.setTransaction(header); request.setIdempotencyKey("owner-original");
+            var leg = new LedgerPostingLegDTO(); leg.setAmount(new java.math.BigDecimal("10"));
+            request.setLegs(new ArrayList<>(List.of(leg)));
+            var postings = mock(LedgerPostingService.class);
+            when(postings.create(any())).thenAnswer(invocation -> Mono.defer(() -> {
+                LedgerPostingRequestDTO supplied = invocation.getArgument(0);
+                assertEquals("owner-original", supplied.getIdempotencyKey());
+                request.setIdempotencyKey("caller-mutated"); request.getTransaction().setTotalAmount(java.math.BigDecimal.ONE);
+                request.getLegs().clear();
+                supplied.setIdempotencyKey("callback-mutated"); supplied.getTransaction().setTotalAmount(java.math.BigDecimal.TEN.negate());
+                supplied.getLegs().getFirst().setAmount(java.math.BigDecimal.ZERO);
+                return Mono.just(new LedgerPostingDTO(new TransactionDTO(), List.of(), false));
+            }));
+            var resources = BoundedR2dbcResources.verify(f.factory, f.client, f.operations, f.context.getBean(R2dbcTransactionManager.class));
+            LedgerMutationAuditAppender audit = (scope, mutation) -> f.factory.requireBoundScope(resources, scope).then(Mono.fromSupplier(() -> {
+                var captured = ((LedgerMutation.Created)mutation).request();
+                assertEquals("owner-original", captured.getIdempotencyKey());
+                assertEquals(new java.math.BigDecimal("10"), captured.getTransaction().getTotalAmount());
+                assertEquals(new java.math.BigDecimal("10"), captured.getLegs().getFirst().getAmount());
+                return ID;
+            }));
+            var service = new LedgerOwningMutationServiceImpl(resources, postings, mock(FundsMoneyService.class), audit,
+                    new CleanupPolicy(Duration.ofSeconds(2), Duration.ofSeconds(2)));
+            assertNotNull(service.create(f.budget(), request).block());
+            assertEquals(1, f.driver.creates); assertEquals(1, f.driver.commits); assertEquals(0, f.driver.rollbacks);
+        }
+    }
 }
