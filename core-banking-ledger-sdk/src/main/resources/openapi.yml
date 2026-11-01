@@ -1,10 +1,16 @@
-openapi: 3.0.1
+openapi: 3.1.0
 info:
-  title: OpenAPI definition
-  version: v0
+  title: core-banking-ledger
+  description: Banking Ledger Core Application
+  contact:
+    name: Firefly Software Foundation
+    email: dev@fireflysoftware.io
+  version: 1.0.0
 servers:
-- url: http://localhost:18080
-  description: Generated server url
+- url: https://openplatform.fireflysoftware.io/ledger
+  description: Development Environment
+- url: /
+  description: Local Development Environment
 tags:
 - name: Transaction Line Direct Debit
   description: APIs for managing direct debit lines associated with a specific transaction
@@ -1818,10 +1824,10 @@ paths:
         required: false
         schema:
           type: integer
-          description: The zero-based page number to retrieve.
           format: int32
-          example: 0
           default: 0
+          description: The zero-based page number to retrieve.
+          example: 0
         example: 0
       - name: pageSize
         in: query
@@ -1829,10 +1835,10 @@ paths:
         required: false
         schema:
           type: integer
-          description: The number of items per page.
           format: int32
-          example: 10
           default: 10
+          description: The number of items per page.
+          example: 10
         example: 10
       - name: sortBy
         in: query
@@ -1849,9 +1855,9 @@ paths:
         required: false
         schema:
           type: string
+          default: DESC
           description: "The direction of sorting, either ASC or DESC."
           example: DESC
-          default: DESC
         example: DESC
       - name: X-Idempotency-Key
         in: header
@@ -2835,55 +2841,413 @@ paths:
       parameters:
       - name: pagination.pageNumber
         in: query
-        description: The zero-based page number to retrieve.
+        description: Page number (0-based)
         required: false
         schema:
           type: integer
-          description: The zero-based page number to retrieve.
           format: int32
-          example: 0
           default: 0
-        example: 0
       - name: pagination.pageSize
         in: query
-        description: The number of items per page.
+        description: Number of items per page
         required: false
         schema:
           type: integer
-          description: The number of items per page.
           format: int32
-          example: 10
           default: 10
-        example: 10
       - name: pagination.sortBy
         in: query
-        description: The field to sort the results by.
+        description: Field to sort by
         required: false
         schema:
           type: string
-          description: The field to sort the results by.
-          example: name
-        example: name
       - name: pagination.sortDirection
         in: query
-        description: "The direction of sorting, either ASC or DESC."
+        description: Sort direction (ASC or DESC)
         required: false
         schema:
           type: string
-          description: "The direction of sorting, either ASC or DESC."
-          example: DESC
           default: DESC
-        example: DESC
       - name: options.caseInsensitiveStrings
         in: query
+        description: Enable case-insensitive string filtering
         required: false
         schema:
           type: boolean
+          default: false
       - name: options.includeInheritedFields
         in: query
+        description: Include fields from parent classes
         required: false
         schema:
           type: boolean
+          default: false
+      - name: filters.externalReference
+        in: query
+        description: Exact filter for external reference
+        required: false
+        schema:
+          type: string
+      - name: filters.transactionDate
+        in: query
+        description: Exact filter for transaction date
+        required: false
+        schema:
+          type: string
+          format: date-time
+      - name: "rangeFilters.ranges[transactionDate].from"
+        in: query
+        description: Filter transaction date from value
+        required: false
+        schema:
+          type: string
+          format: date-time
+      - name: "rangeFilters.ranges[transactionDate].to"
+        in: query
+        description: Filter transaction date to value
+        required: false
+        schema:
+          type: string
+          format: date-time
+      - name: filters.valueDate
+        in: query
+        description: Exact filter for value date
+        required: false
+        schema:
+          type: string
+          format: date-time
+      - name: "rangeFilters.ranges[valueDate].from"
+        in: query
+        description: Filter value date from value
+        required: false
+        schema:
+          type: string
+          format: date-time
+      - name: "rangeFilters.ranges[valueDate].to"
+        in: query
+        description: Filter value date to value
+        required: false
+        schema:
+          type: string
+          format: date-time
+      - name: filters.transactionType
+        in: query
+        description: Exact filter for transaction type
+        required: false
+        schema:
+          type: string
+          enum:
+          - DEPOSIT
+          - WITHDRAWAL
+          - TRANSFER
+          - FEE
+          - INTEREST
+          - WIRE_TRANSFER
+          - STANDING_ORDER
+          - ACH
+          - CARD
+          - DIRECT_DEBIT
+          - SEPA_TRANSFER
+          - CRYPTO_DEPOSIT
+          - CRYPTO_WITHDRAWAL
+          - CRYPTO_TRANSFER
+          - CRYPTO_SWAP
+          - TOKEN_MINT
+          - TOKEN_BURN
+          - NFT_TRANSFER
+          - STAKING
+          - UNSTAKING
+          - REWARD
+      - name: filters.transactionStatus
+        in: query
+        description: Exact filter for transaction status
+        required: false
+        schema:
+          type: string
+          enum:
+          - PENDING
+          - POSTED
+          - REVERSED
+          - FAILED
+      - name: filters.totalAmount
+        in: query
+        description: Exact filter for total amount
+        required: false
+        schema:
+          type: string
+      - name: "rangeFilters.ranges[totalAmount].from"
+        in: query
+        description: Filter total amount from value
+        required: false
+        schema:
+          type: string
+      - name: "rangeFilters.ranges[totalAmount].to"
+        in: query
+        description: Filter total amount to value
+        required: false
+        schema:
+          type: string
+      - name: filters.currency
+        in: query
+        description: Exact filter for currency
+        required: false
+        schema:
+          type: string
+      - name: filters.description
+        in: query
+        description: Exact filter for description
+        required: false
+        schema:
+          type: string
+      - name: filters.initiatingParty
+        in: query
+        description: Exact filter for initiating party
+        required: false
+        schema:
+          type: string
+      - name: filters.accountId
+        in: query
+        description: Exact filter for account id
+        required: false
+        schema:
+          type: string
+      - name: filters.accountSpaceId
+        in: query
+        description: Exact filter for account space id
+        required: false
+        schema:
+          type: string
+      - name: filters.transactionCategoryId
+        in: query
+        description: Exact filter for transaction category id
+        required: false
+        schema:
+          type: string
+      - name: filters.branchOfficeCode
+        in: query
+        description: Exact filter for branch office code
+        required: false
+        schema:
+          type: string
+      - name: filters.initiatingPartyIdentifier
+        in: query
+        description: Exact filter for initiating party identifier
+        required: false
+        schema:
+          type: string
+      - name: filters.latitude
+        in: query
+        description: Exact filter for latitude
+        required: false
+        schema:
+          type: number
+      - name: "rangeFilters.ranges[latitude].from"
+        in: query
+        description: Filter latitude from value
+        required: false
+        schema:
+          type: number
+      - name: "rangeFilters.ranges[latitude].to"
+        in: query
+        description: Filter latitude to value
+        required: false
+        schema:
+          type: number
+      - name: filters.longitude
+        in: query
+        description: Exact filter for longitude
+        required: false
+        schema:
+          type: number
+      - name: "rangeFilters.ranges[longitude].from"
+        in: query
+        description: Filter longitude from value
+        required: false
+        schema:
+          type: number
+      - name: "rangeFilters.ranges[longitude].to"
+        in: query
+        description: Filter longitude to value
+        required: false
+        schema:
+          type: number
+      - name: filters.locationName
+        in: query
+        description: Exact filter for location name
+        required: false
+        schema:
+          type: string
+      - name: filters.country
+        in: query
+        description: Exact filter for country
+        required: false
+        schema:
+          type: string
+      - name: filters.city
+        in: query
+        description: Exact filter for city
+        required: false
+        schema:
+          type: string
+      - name: filters.postalCode
+        in: query
+        description: Exact filter for postal code
+        required: false
+        schema:
+          type: string
+      - name: filters.relatedTransactionId
+        in: query
+        description: Exact filter for related transaction id
+        required: false
+        schema:
+          type: string
+      - name: filters.relationType
+        in: query
+        description: Exact filter for relation type
+        required: false
+        schema:
+          type: string
+      - name: filters.bookingDate
+        in: query
+        description: Exact filter for booking date
+        required: false
+        schema:
+          type: string
+          format: date-time
+      - name: "rangeFilters.ranges[bookingDate].from"
+        in: query
+        description: Filter booking date from value
+        required: false
+        schema:
+          type: string
+          format: date-time
+      - name: "rangeFilters.ranges[bookingDate].to"
+        in: query
+        description: Filter booking date to value
+        required: false
+        schema:
+          type: string
+          format: date-time
+      - name: filters.rowVersion
+        in: query
+        description: Exact filter for row version
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - name: "rangeFilters.ranges[rowVersion].from"
+        in: query
+        description: Filter row version from value
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - name: "rangeFilters.ranges[rowVersion].to"
+        in: query
+        description: Filter row version to value
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - name: filters.amlRiskScore
+        in: query
+        description: Exact filter for aml risk score
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - name: "rangeFilters.ranges[amlRiskScore].from"
+        in: query
+        description: Filter aml risk score from value
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - name: "rangeFilters.ranges[amlRiskScore].to"
+        in: query
+        description: Filter aml risk score to value
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - name: filters.amlScreeningResult
+        in: query
+        description: Exact filter for aml screening result
+        required: false
+        schema:
+          type: string
+      - name: filters.amlLargeTxnFlag
+        in: query
+        description: Exact filter for aml large txn flag
+        required: false
+        schema:
+          type: boolean
+      - name: filters.scaMethod
+        in: query
+        description: Exact filter for sca method
+        required: false
+        schema:
+          type: string
+      - name: filters.scaResult
+        in: query
+        description: Exact filter for sca result
+        required: false
+        schema:
+          type: string
+      - name: filters.instantFlag
+        in: query
+        description: Exact filter for instant flag
+        required: false
+        schema:
+          type: boolean
+      - name: filters.confirmationOfPayeeResult
+        in: query
+        description: Exact filter for confirmation of payee result
+        required: false
+        schema:
+          type: string
+      - name: filters.dateCreated
+        in: query
+        description: Exact filter for date created
+        required: false
+        schema:
+          type: string
+          format: date-time
+      - name: "rangeFilters.ranges[dateCreated].from"
+        in: query
+        description: Filter date created from value
+        required: false
+        schema:
+          type: string
+          format: date-time
+      - name: "rangeFilters.ranges[dateCreated].to"
+        in: query
+        description: Filter date created to value
+        required: false
+        schema:
+          type: string
+          format: date-time
+      - name: filters.dateUpdated
+        in: query
+        description: Exact filter for date updated
+        required: false
+        schema:
+          type: string
+          format: date-time
+      - name: "rangeFilters.ranges[dateUpdated].from"
+        in: query
+        description: Filter date updated from value
+        required: false
+        schema:
+          type: string
+          format: date-time
+      - name: "rangeFilters.ranges[dateUpdated].to"
+        in: query
+        description: Filter date updated to value
+        required: false
+        schema:
+          type: string
+          format: date-time
       - name: X-Idempotency-Key
         in: header
         description: "Optional retry key for scoped POST, PUT, PATCH, and DELETE response\
@@ -3286,10 +3650,10 @@ paths:
         required: false
         schema:
           type: integer
-          description: The zero-based page number to retrieve.
           format: int32
-          example: 0
           default: 0
+          description: The zero-based page number to retrieve.
+          example: 0
         example: 0
       - name: pageSize
         in: query
@@ -3297,10 +3661,10 @@ paths:
         required: false
         schema:
           type: integer
-          description: The number of items per page.
           format: int32
-          example: 10
           default: 10
+          description: The number of items per page.
+          example: 10
         example: 10
       - name: sortBy
         in: query
@@ -3317,9 +3681,9 @@ paths:
         required: false
         schema:
           type: string
+          default: DESC
           description: "The direction of sorting, either ASC or DESC."
           example: DESC
-          default: DESC
         example: DESC
       - name: X-Idempotency-Key
         in: header
@@ -3358,10 +3722,10 @@ paths:
         required: false
         schema:
           type: integer
-          description: The zero-based page number to retrieve.
           format: int32
-          example: 0
           default: 0
+          description: The zero-based page number to retrieve.
+          example: 0
         example: 0
       - name: pageSize
         in: query
@@ -3369,10 +3733,10 @@ paths:
         required: false
         schema:
           type: integer
-          description: The number of items per page.
           format: int32
-          example: 10
           default: 10
+          description: The number of items per page.
+          example: 10
         example: 10
       - name: sortBy
         in: query
@@ -3389,9 +3753,9 @@ paths:
         required: false
         schema:
           type: string
+          default: DESC
           description: "The direction of sorting, either ASC or DESC."
           example: DESC
-          default: DESC
         example: DESC
       - name: X-Idempotency-Key
         in: header
@@ -3618,10 +3982,10 @@ paths:
         required: false
         schema:
           type: integer
-          description: The zero-based page number to retrieve.
           format: int32
-          example: 0
           default: 0
+          description: The zero-based page number to retrieve.
+          example: 0
         example: 0
       - name: pageSize
         in: query
@@ -3629,10 +3993,10 @@ paths:
         required: false
         schema:
           type: integer
-          description: The number of items per page.
           format: int32
-          example: 10
           default: 10
+          description: The number of items per page.
+          example: 10
         example: 10
       - name: sortBy
         in: query
@@ -3649,9 +4013,9 @@ paths:
         required: false
         schema:
           type: string
+          default: DESC
           description: "The direction of sorting, either ASC or DESC."
           example: DESC
-          default: DESC
         example: DESC
       - name: X-Idempotency-Key
         in: header
@@ -3691,10 +4055,10 @@ paths:
         required: false
         schema:
           type: integer
-          description: The zero-based page number to retrieve.
           format: int32
-          example: 0
           default: 0
+          description: The zero-based page number to retrieve.
+          example: 0
         example: 0
       - name: pageSize
         in: query
@@ -3702,10 +4066,10 @@ paths:
         required: false
         schema:
           type: integer
-          description: The number of items per page.
           format: int32
-          example: 10
           default: 10
+          description: The number of items per page.
+          example: 10
         example: 10
       - name: sortBy
         in: query
@@ -3722,9 +4086,9 @@ paths:
         required: false
         schema:
           type: string
+          default: DESC
           description: "The direction of sorting, either ASC or DESC."
           example: DESC
-          default: DESC
         example: DESC
       - name: X-Idempotency-Key
         in: header
@@ -3745,10 +4109,6 @@ paths:
 components:
   schemas:
     TransactionStatusHistoryDTO:
-      required:
-      - statusCode
-      - statusStartDatetime
-      - transactionId
       type: object
       properties:
         dateCreated:
@@ -3780,15 +4140,16 @@ components:
           type: string
           format: date-time
         reason:
+          type: string
           maxLength: 500
           minLength: 0
-          type: string
         regulatedReportingFlag:
           type: boolean
-    TransactionLineWithdrawalDTO:
       required:
+      - statusCode
+      - statusStartDatetime
       - transactionId
-      - withdrawalMethod
+    TransactionLineWithdrawalDTO:
       type: object
       properties:
         dateCreated:
@@ -3807,48 +4168,48 @@ components:
           type: string
           format: uuid
         withdrawalMethod:
+          type: string
           maxLength: 50
           minLength: 0
-          type: string
         withdrawalReference:
+          type: string
           maxLength: 100
           minLength: 0
-          type: string
         withdrawalLocation:
+          type: string
           maxLength: 200
           minLength: 0
-          type: string
         withdrawalNotes:
+          type: string
           maxLength: 500
           minLength: 0
-          type: string
         withdrawalConfirmationCode:
+          type: string
           maxLength: 50
           minLength: 0
-          type: string
         withdrawalReceiptNumber:
+          type: string
           maxLength: 50
           minLength: 0
-          type: string
         withdrawalAtmId:
+          type: string
           maxLength: 20
           minLength: 0
-          type: string
         withdrawalBranchId:
+          type: string
           maxLength: 20
           minLength: 0
-          type: string
         withdrawalTimestamp:
           type: string
           format: date-time
         withdrawalProcessedBy:
+          type: string
           maxLength: 100
           minLength: 0
-          type: string
         withdrawalAuthorizationCode:
+          type: string
           maxLength: 50
           minLength: 0
-          type: string
         withdrawalDailyLimitCheck:
           type: boolean
         withdrawalDailyAmountUsed:
@@ -3856,17 +4217,13 @@ components:
         withdrawalDailyLimit:
           type: number
         withdrawalSpanishTaxCode:
+          type: string
           maxLength: 20
           minLength: 0
-          type: string
-    TransactionLineWireTransferDTO:
       required:
       - transactionId
-      - wireDestinationAccountNumber
-      - wireDestinationSwiftBic
-      - wireOriginAccountNumber
-      - wireOriginSwiftBic
-      - wireTransferPriority
+      - withdrawalMethod
+    TransactionLineWireTransferDTO:
       type: object
       properties:
         dateCreated:
@@ -3885,29 +4242,29 @@ components:
           type: string
           format: uuid
         wireTransferReference:
+          type: string
           maxLength: 100
           minLength: 0
-          type: string
         wireOriginSwiftBic:
+          type: string
           maxLength: 11
           minLength: 0
-          type: string
         wireDestinationSwiftBic:
+          type: string
           maxLength: 11
           minLength: 0
-          type: string
         wireOriginAccountNumber:
+          type: string
           maxLength: 50
           minLength: 0
-          type: string
         wireDestinationAccountNumber:
+          type: string
           maxLength: 50
           minLength: 0
-          type: string
         wireTransferPurpose:
+          type: string
           maxLength: 200
           minLength: 0
-          type: string
         wireTransferPriority:
           type: string
           enum:
@@ -3915,51 +4272,53 @@ components:
           - NORMAL
           - LOW
         wireExchangeRate:
-          minimum: 0.0
-          exclusiveMinimum: false
           type: number
+          minimum: 0.0
         wireFeeAmount:
           type: number
         wireFeeCurrency:
           type: string
         wireInstructingParty:
+          type: string
           maxLength: 200
           minLength: 0
-          type: string
         wireBeneficiaryName:
+          type: string
           maxLength: 200
           minLength: 0
-          type: string
         wireBeneficiaryAddress:
+          type: string
           maxLength: 500
           minLength: 0
-          type: string
         wireProcessingDate:
           type: string
           format: date-time
         wireTransactionNotes:
+          type: string
           maxLength: 500
           minLength: 0
-          type: string
         wireReceptionStatus:
+          type: string
           maxLength: 50
           minLength: 0
-          type: string
         wireDeclineReason:
+          type: string
           maxLength: 200
           minLength: 0
-          type: string
         wireCancelledFlag:
           type: boolean
         bankOfSpainRegCode:
+          type: string
           maxLength: 20
           minLength: 0
-          type: string
-    TransactionLineTransferDTO:
       required:
       - transactionId
-      - transferDestinationAccountId
-      - transferSourceAccountId
+      - wireDestinationAccountNumber
+      - wireDestinationSwiftBic
+      - wireOriginAccountNumber
+      - wireOriginSwiftBic
+      - wireTransferPriority
+    TransactionLineTransferDTO:
       type: object
       properties:
         dateCreated:
@@ -3978,9 +4337,9 @@ components:
           type: string
           format: uuid
         transferReference:
+          type: string
           maxLength: 100
           minLength: 0
-          type: string
         transferSourceAccountId:
           type: string
           format: uuid
@@ -3988,36 +4347,36 @@ components:
           type: string
           format: uuid
         transferSourceAccountNumber:
+          type: string
           maxLength: 50
           minLength: 0
-          type: string
         transferDestinationAccountNumber:
+          type: string
           maxLength: 50
           minLength: 0
-          type: string
         transferSourceAccountName:
+          type: string
           maxLength: 200
           minLength: 0
-          type: string
         transferDestinationAccountName:
+          type: string
           maxLength: 200
           minLength: 0
-          type: string
         transferPurpose:
+          type: string
           maxLength: 200
           minLength: 0
-          type: string
         transferNotes:
+          type: string
           maxLength: 500
           minLength: 0
-          type: string
         transferTimestamp:
           type: string
           format: date-time
         transferProcessedBy:
+          type: string
           maxLength: 100
           minLength: 0
-          type: string
         transferFeeAmount:
           type: number
         transferFeeCurrency:
@@ -4029,18 +4388,14 @@ components:
           type: string
           format: date
         transferSpanishTaxCode:
+          type: string
           maxLength: 20
           minLength: 0
-          type: string
-    TransactionLineStandingOrderDTO:
       required:
-      - standingOrderFrequency
-      - standingOrderId
-      - standingOrderRecipientIban
-      - standingOrderRecipientName
-      - standingOrderStartDate
-      - standingOrderStatus
       - transactionId
+      - transferDestinationAccountId
+      - transferSourceAccountId
+    TransactionLineStandingOrderDTO:
       type: object
       properties:
         dateCreated:
@@ -4059,9 +4414,9 @@ components:
           type: string
           format: uuid
         standingOrderId:
+          type: string
           maxLength: 50
           minLength: 0
-          type: string
         standingOrderFrequency:
           type: string
           enum:
@@ -4079,22 +4434,22 @@ components:
           type: string
           format: date
         standingOrderReference:
+          type: string
           maxLength: 100
           minLength: 0
-          type: string
         standingOrderRecipientName:
+          type: string
           maxLength: 200
           minLength: 0
-          type: string
         standingOrderRecipientIban:
-          minLength: 1
           type: string
+          minLength: 1
         standingOrderRecipientBic:
           type: string
         standingOrderPurpose:
+          type: string
           maxLength: 200
           minLength: 0
-          type: string
         standingOrderStatus:
           type: string
           enum:
@@ -4102,16 +4457,16 @@ components:
           - CANCELLED
           - SUSPENDED
         standingOrderNotes:
+          type: string
           maxLength: 500
           minLength: 0
-          type: string
         standingOrderLastExecutionDate:
           type: string
           format: date
         standingOrderTotalExecutions:
-          minimum: 0
           type: integer
           format: int32
+          minimum: 0
         standingOrderCancelledDate:
           type: string
           format: date-time
@@ -4119,13 +4474,13 @@ components:
           type: string
           format: date
         standingOrderCreatedBy:
+          type: string
           maxLength: 100
           minLength: 0
-          type: string
         standingOrderUpdatedBy:
+          type: string
           maxLength: 100
           minLength: 0
-          type: string
         standingOrderCreationTimestamp:
           type: string
           format: date-time
@@ -4134,14 +4489,15 @@ components:
           format: date-time
         standingOrderSpanishTaxFlag:
           type: boolean
-    TransactionLineSepaTransferDTO:
       required:
-      - sepaDestinationIban
-      - sepaEndToEndId
-      - sepaOriginIban
-      - sepaPaymentScheme
-      - sepaTransactionStatus
+      - standingOrderFrequency
+      - standingOrderId
+      - standingOrderRecipientIban
+      - standingOrderRecipientName
+      - standingOrderStartDate
+      - standingOrderStatus
       - transactionId
+    TransactionLineSepaTransferDTO:
       type: object
       properties:
         dateCreated:
@@ -4160,21 +4516,21 @@ components:
           type: string
           format: uuid
         sepaEndToEndId:
+          type: string
           maxLength: 35
           minLength: 0
-          type: string
         sepaRemittanceInfo:
+          type: string
           maxLength: 140
           minLength: 0
-          type: string
         sepaOriginIban:
-          minLength: 1
           type: string
+          minLength: 1
         sepaOriginBic:
           type: string
         sepaDestinationIban:
-          minLength: 1
           type: string
+          minLength: 1
         sepaDestinationBic:
           type: string
         sepaTransactionStatus:
@@ -4184,65 +4540,60 @@ components:
           - RJCT
           - PDNG
         sepaCreditorId:
+          type: string
           maxLength: 35
           minLength: 0
-          type: string
         sepaDebtorId:
+          type: string
           maxLength: 35
           minLength: 0
-          type: string
         sepaInitiatingAgentBic:
           type: string
         sepaIntermediaryBic:
           type: string
         sepaTransactionPurpose:
+          type: string
           maxLength: 4
           minLength: 0
-          type: string
         sepaRequestedExecutionDate:
           type: string
           format: date
         sepaExchangeRate:
-          minimum: 0.0
-          exclusiveMinimum: false
           type: number
+          minimum: 0.0
         sepaFeeAmount:
           type: number
         sepaFeeCurrency:
           type: string
         sepaRecipientName:
+          type: string
           maxLength: 70
           minLength: 0
-          type: string
         sepaRecipientAddress:
+          type: string
           maxLength: 140
           minLength: 0
-          type: string
         sepaProcessingDate:
           type: string
           format: date-time
         sepaNotes:
+          type: string
           maxLength: 500
           minLength: 0
-          type: string
         sepaPaymentScheme:
           type: string
           enum:
           - CORE
           - B2B
           - COR1
-    TransactionLineInterestDTO:
       required:
-      - interestAccrualEndDate
-      - interestAccrualStartDate
-      - interestCalculationBase
-      - interestCalculationMethod
-      - interestCurrency
-      - interestGrossAmount
-      - interestNetAmount
-      - interestRatePercentage
-      - interestType
+      - sepaDestinationIban
+      - sepaEndToEndId
+      - sepaOriginIban
+      - sepaPaymentScheme
+      - sepaTransactionStatus
       - transactionId
+    TransactionLineInterestDTO:
       type: object
       properties:
         dateCreated:
@@ -4261,32 +4612,30 @@ components:
           type: string
           format: uuid
         interestType:
+          type: string
           maxLength: 50
           minLength: 0
-          type: string
         interestDescription:
+          type: string
           maxLength: 200
           minLength: 0
-          type: string
         interestReference:
+          type: string
           maxLength: 100
           minLength: 0
-          type: string
         interestRelatedAccountId:
           type: string
           format: uuid
         interestCalculationMethod:
+          type: string
           maxLength: 50
           minLength: 0
-          type: string
         interestCalculationBase:
           type: number
         interestRatePercentage:
-          maximum: 100.0
-          exclusiveMaximum: false
-          minimum: 0.0
-          exclusiveMinimum: false
           type: number
+          maximum: 100.0
+          minimum: 0.0
         interestAccrualStartDate:
           type: string
           format: date
@@ -4294,20 +4643,18 @@ components:
           type: string
           format: date
         interestDaysCalculated:
-          minimum: 0
           type: integer
           format: int32
+          minimum: 0
         interestCurrency:
-          minLength: 1
           type: string
+          minLength: 1
         interestTaxWithheldAmount:
           type: number
         interestTaxWithheldRate:
-          maximum: 100.0
-          exclusiveMaximum: false
-          minimum: 0.0
-          exclusiveMinimum: false
           type: number
+          maximum: 100.0
+          minimum: 0.0
         interestGrossAmount:
           type: number
         interestNetAmount:
@@ -4316,17 +4663,25 @@ components:
           type: string
           format: date-time
         interestProcessedBy:
+          type: string
           maxLength: 100
           minLength: 0
-          type: string
         interestSpanishTaxCode:
+          type: string
           maxLength: 20
           minLength: 0
-          type: string
-    TransactionLineFeeDTO:
       required:
-      - feeType
+      - interestAccrualEndDate
+      - interestAccrualStartDate
+      - interestCalculationBase
+      - interestCalculationMethod
+      - interestCurrency
+      - interestGrossAmount
+      - interestNetAmount
+      - interestRatePercentage
+      - interestType
       - transactionId
+    TransactionLineFeeDTO:
       type: object
       properties:
         dateCreated:
@@ -4345,36 +4700,34 @@ components:
           type: string
           format: uuid
         feeType:
+          type: string
           maxLength: 50
           minLength: 0
-          type: string
         feeDescription:
+          type: string
           maxLength: 200
           minLength: 0
-          type: string
         feeReference:
+          type: string
           maxLength: 100
           minLength: 0
-          type: string
         feeRelatedTransactionId:
           type: string
           format: uuid
         feeRelatedService:
+          type: string
           maxLength: 100
           minLength: 0
-          type: string
         feeCalculationMethod:
+          type: string
           maxLength: 50
           minLength: 0
-          type: string
         feeCalculationBase:
           type: number
         feeRatePercentage:
-          maximum: 100.0
-          exclusiveMaximum: false
-          minimum: 0.0
-          exclusiveMinimum: false
           type: number
+          maximum: 100.0
+          minimum: 0.0
         feeFixedAmount:
           type: number
         feeCurrency:
@@ -4382,33 +4735,28 @@ components:
         feeWaived:
           type: boolean
         feeWaiverReason:
+          type: string
           maxLength: 200
           minLength: 0
-          type: string
         feeWaiverAuthorizedBy:
+          type: string
           maxLength: 100
           minLength: 0
-          type: string
         feeTimestamp:
           type: string
           format: date-time
         feeProcessedBy:
+          type: string
           maxLength: 100
           minLength: 0
-          type: string
         feeSpanishTaxCode:
+          type: string
           maxLength: 20
           minLength: 0
-          type: string
-    TransactionLineDirectDebitDTO:
       required:
-      - directDebitCreditorId
-      - directDebitDueDate
-      - directDebitMandateId
-      - directDebitProcessingStatus
-      - directDebitSequenceType
-      - directDebitSpanishScheme
+      - feeType
       - transactionId
+    TransactionLineDirectDebitDTO:
       type: object
       properties:
         dateCreated:
@@ -4427,17 +4775,17 @@ components:
           type: string
           format: uuid
         directDebitMandateId:
+          type: string
           maxLength: 50
           minLength: 0
-          type: string
         directDebitCreditorId:
+          type: string
           maxLength: 50
           minLength: 0
-          type: string
         directDebitReference:
+          type: string
           maxLength: 100
           minLength: 0
-          type: string
         directDebitSequenceType:
           type: string
           enum:
@@ -4449,21 +4797,21 @@ components:
           type: string
           format: date
         directDebitPaymentMethod:
+          type: string
           maxLength: 50
           minLength: 0
-          type: string
         directDebitDebtorName:
+          type: string
           maxLength: 200
           minLength: 0
-          type: string
         directDebitDebtorAddress:
+          type: string
           maxLength: 500
           minLength: 0
-          type: string
         directDebitDebtorContact:
+          type: string
           maxLength: 100
           minLength: 0
-          type: string
         directDebitProcessingStatus:
           type: string
           enum:
@@ -4483,10 +4831,15 @@ components:
           - CORE
           - B2B
           - COR1
-    TransactionLineDepositDTO:
       required:
-      - depositMethod
+      - directDebitCreditorId
+      - directDebitDueDate
+      - directDebitMandateId
+      - directDebitProcessingStatus
+      - directDebitSequenceType
+      - directDebitSpanishScheme
       - transactionId
+    TransactionLineDepositDTO:
       type: object
       properties:
         dateCreated:
@@ -4505,66 +4858,67 @@ components:
           type: string
           format: uuid
         depositMethod:
+          type: string
           maxLength: 50
           minLength: 0
-          type: string
         depositReference:
+          type: string
           maxLength: 100
           minLength: 0
-          type: string
         depositLocation:
+          type: string
           maxLength: 200
           minLength: 0
-          type: string
         depositNotes:
+          type: string
           maxLength: 500
           minLength: 0
-          type: string
         depositConfirmationCode:
+          type: string
           maxLength: 50
           minLength: 0
-          type: string
         depositReceiptNumber:
+          type: string
           maxLength: 50
           minLength: 0
-          type: string
         depositAtmId:
+          type: string
           maxLength: 20
           minLength: 0
-          type: string
         depositBranchId:
+          type: string
           maxLength: 20
           minLength: 0
-          type: string
         depositCashAmount:
           type: number
         depositCheckAmount:
           type: number
         depositCheckNumber:
+          type: string
           maxLength: 50
           minLength: 0
-          type: string
         depositCheckDate:
           type: string
           format: date
         depositCheckBank:
+          type: string
           maxLength: 100
           minLength: 0
-          type: string
         depositTimestamp:
           type: string
           format: date-time
         depositProcessedBy:
+          type: string
           maxLength: 100
           minLength: 0
-          type: string
         depositSpanishTaxCode:
+          type: string
           maxLength: 20
           minLength: 0
-          type: string
-    TransactionLineCardDTO:
       required:
+      - depositMethod
       - transactionId
+    TransactionLineCardDTO:
       type: object
       properties:
         dateCreated:
@@ -4583,33 +4937,33 @@ components:
           type: string
           format: uuid
         cardAuthCode:
+          type: string
           maxLength: 20
           minLength: 0
-          type: string
         cardMerchantCategoryCode:
+          type: string
           maxLength: 10
           minLength: 0
-          type: string
         cardMerchantName:
+          type: string
           maxLength: 200
           minLength: 0
-          type: string
         cardPosEntryMode:
+          type: string
           maxLength: 10
           minLength: 0
-          type: string
         cardTransactionReference:
+          type: string
           maxLength: 100
           minLength: 0
-          type: string
         cardTerminalId:
+          type: string
           maxLength: 20
           minLength: 0
-          type: string
         cardHolderCountry:
+          type: string
           maxLength: 3
           minLength: 0
-          type: string
         cardPresentFlag:
           type: boolean
         cardTransactionTimestamp:
@@ -4618,29 +4972,23 @@ components:
         cardFraudFlag:
           type: boolean
         cardCurrencyConversionRate:
-          minimum: 0.0
-          exclusiveMinimum: false
           type: number
+          minimum: 0.0
         cardFeeAmount:
           type: number
         cardFeeCurrency:
           type: string
         cardInstallmentPlan:
+          type: string
           maxLength: 50
           minLength: 0
-          type: string
         cardMerchantTaxId:
+          type: string
           maxLength: 20
           minLength: 0
-          type: string
-    TransactionLineAchDTO:
       required:
-      - achDestinationAccountId
-      - achDestinationAccountNumber
-      - achRoutingNumber
-      - achSourceAccountId
-      - achSourceAccountNumber
       - transactionId
+    TransactionLineAchDTO:
       type: object
       properties:
         dateCreated:
@@ -4659,9 +5007,9 @@ components:
           type: string
           format: uuid
         achReference:
+          type: string
           maxLength: 100
           minLength: 0
-          type: string
         achSourceAccountId:
           type: string
           format: uuid
@@ -4669,44 +5017,44 @@ components:
           type: string
           format: uuid
         achSourceAccountNumber:
+          type: string
           maxLength: 50
           minLength: 0
-          type: string
         achDestinationAccountNumber:
+          type: string
           maxLength: 50
           minLength: 0
-          type: string
         achSourceAccountName:
+          type: string
           maxLength: 200
           minLength: 0
-          type: string
         achDestinationAccountName:
+          type: string
           maxLength: 200
           minLength: 0
-          type: string
         achRoutingNumber:
+          type: string
           maxLength: 20
           minLength: 0
-          type: string
         achTransactionCode:
+          type: string
           maxLength: 10
           minLength: 0
-          type: string
         achPurpose:
+          type: string
           maxLength: 200
           minLength: 0
-          type: string
         achNotes:
+          type: string
           maxLength: 500
           minLength: 0
-          type: string
         achTimestamp:
           type: string
           format: date-time
         achProcessedBy:
+          type: string
           maxLength: 100
           minLength: 0
-          type: string
         achFeeAmount:
           type: number
         achFeeCurrency:
@@ -4718,37 +5066,36 @@ components:
           type: string
           format: date
         achBatchNumber:
+          type: string
           maxLength: 20
           minLength: 0
-          type: string
         achTraceNumber:
+          type: string
           maxLength: 20
           minLength: 0
-          type: string
         achEntryClassCode:
+          type: string
           maxLength: 10
           minLength: 0
-          type: string
         achSettlementDate:
           type: string
           format: date
         achReturnCode:
+          type: string
           maxLength: 10
           minLength: 0
-          type: string
         achReturnReason:
+          type: string
           maxLength: 200
           minLength: 0
-          type: string
-    TransactionDTO:
       required:
-      - accountId
-      - currency
-      - totalAmount
-      - transactionDate
-      - transactionStatus
-      - transactionType
-      - valueDate
+      - achDestinationAccountId
+      - achDestinationAccountNumber
+      - achRoutingNumber
+      - achSourceAccountId
+      - achSourceAccountNumber
+      - transactionId
+    TransactionDTO:
       type: object
       properties:
         dateCreated:
@@ -4764,9 +5111,9 @@ components:
           format: uuid
           readOnly: true
         externalReference:
+          type: string
           maxLength: 100
           minLength: 0
-          type: string
         transactionDate:
           type: string
           format: date-time
@@ -4807,16 +5154,16 @@ components:
         totalAmount:
           type: number
         currency:
-          minLength: 1
           type: string
+          minLength: 1
         description:
+          type: string
           maxLength: 500
           minLength: 0
-          type: string
         initiatingParty:
+          type: string
           maxLength: 100
           minLength: 0
-          type: string
         accountId:
           type: string
           format: uuid
@@ -4827,97 +5174,94 @@ components:
           type: string
           format: uuid
         branchOfficeCode:
+          type: string
           maxLength: 20
           minLength: 0
-          type: string
         initiatingPartyIdentifier:
+          type: string
           maxLength: 20
           minLength: 0
-          type: string
         latitude:
+          type: number
+          format: double
           maximum: 90.0
-          exclusiveMaximum: false
           minimum: -90.0
-          exclusiveMinimum: false
-          type: number
-          format: double
         longitude:
-          maximum: 180.0
-          exclusiveMaximum: false
-          minimum: -180.0
-          exclusiveMinimum: false
           type: number
           format: double
+          maximum: 180.0
+          minimum: -180.0
         locationName:
+          type: string
           maxLength: 100
           minLength: 0
-          type: string
         country:
+          type: string
           maxLength: 3
           minLength: 0
-          type: string
         city:
+          type: string
           maxLength: 100
           minLength: 0
-          type: string
         postalCode:
+          type: string
           maxLength: 20
           minLength: 0
-          type: string
         relatedTransactionId:
           type: string
           format: uuid
         relationType:
+          type: string
           pattern: REVERSAL|ADJUSTMENT|CHARGEBACK|CORRECTION
-          type: string
         requestId:
+          type: string
           maxLength: 100
           minLength: 0
-          type: string
         batchId:
+          type: string
           maxLength: 100
           minLength: 0
-          type: string
         bookingDate:
           type: string
           format: date-time
         rowVersion:
-          minimum: 0
           type: integer
           format: int64
+          minimum: 0
           readOnly: true
         amlRiskScore:
-          maximum: 100
-          minimum: 0
           type: integer
           format: int32
+          maximum: 100
+          minimum: 0
         amlScreeningResult:
+          type: string
           maxLength: 50
           minLength: 0
-          type: string
         amlLargeTxnFlag:
           type: boolean
         scaMethod:
+          type: string
           maxLength: 50
           minLength: 0
-          type: string
         scaResult:
+          type: string
           maxLength: 50
           minLength: 0
-          type: string
         instantFlag:
           type: boolean
         confirmationOfPayeeResult:
-          pattern: OK|MISMATCH|UNAVAILABLE
           type: string
-    TransactionLegDTO:
+          pattern: OK|MISMATCH|UNAVAILABLE
       required:
       - accountId
-      - amount
       - currency
-      - legType
-      - transactionId
+      - totalAmount
+      - transactionDate
+      - transactionStatus
+      - transactionType
       - valueDate
+    TransactionLegDTO:
       type: object
       properties:
         dateCreated:
@@ -4942,34 +5286,32 @@ components:
           type: string
           format: uuid
         legType:
+          type: string
           minLength: 1
           pattern: DEBIT|CREDIT
-          type: string
         amount:
           type: number
         currency:
-          minLength: 1
           type: string
+          minLength: 1
         description:
+          type: string
           maxLength: 500
           minLength: 0
-          type: string
         valueDate:
           type: string
           format: date-time
         bookingDate:
           type: string
           format: date-time
-    TransactionAttachmentDTO:
       required:
-      - attachmentName
-      - attachmentType
-      - contentType
-      - documentId
-      - sizeBytes
+      - accountId
+      - amount
+      - currency
+      - legType
       - transactionId
-      - uploadDate
-      - uploadedBy
+      - valueDate
+    TransactionAttachmentDTO:
       type: object
       properties:
         dateCreated:
@@ -5001,36 +5343,45 @@ components:
           - CORRESPONDENCE
           - OTHER
         attachmentName:
+          type: string
           maxLength: 255
           minLength: 0
-          type: string
         attachmentDescription:
+          type: string
           maxLength: 500
           minLength: 0
-          type: string
         documentId:
+          type: string
           maxLength: 100
           minLength: 0
-          type: string
         contentType:
+          type: string
           maxLength: 100
           minLength: 0
-          type: string
         sizeBytes:
-          minimum: 0
           type: integer
           format: int64
+          minimum: 0
         hashSha256:
+          type: string
           maxLength: 64
           minLength: 0
-          type: string
         uploadedBy:
+          type: string
           maxLength: 100
           minLength: 0
-          type: string
         uploadDate:
           type: string
           format: date-time
+      required:
+      - attachmentName
+      - attachmentType
+      - contentType
+      - documentId
+      - sizeBytes
+      - transactionId
+      - uploadDate
+      - uploadedBy
     Reserve:
       type: object
       properties:
@@ -5225,9 +5576,6 @@ components:
           - ACTIVE
           - CLOSED
     MoneyDTO:
-      required:
-      - amount
-      - currency
       type: object
       properties:
         dateCreated:
@@ -5245,15 +5593,12 @@ components:
         amount:
           type: number
         currency:
-          minLength: 1
           type: string
-    LedgerPostingHeaderDTO:
+          minLength: 1
       required:
-      - accountId
+      - amount
       - currency
-      - totalAmount
-      - transactionStatus
-      - transactionType
+    LedgerPostingHeaderDTO:
       type: object
       properties:
         accountId:
@@ -5297,22 +5642,28 @@ components:
           type: string
         transactionDate:
           type: string
-          description: Optional. The core assigns the transaction time when omitted.
           format: date-time
+          description: Optional. The core assigns the transaction time when omitted.
         valueDate:
           type: string
-          description: Optional. Defaults to the assigned transaction time.
           format: date-time
+          description: Optional. Defaults to the assigned transaction time.
         bookingDate:
           type: string
-          description: Optional. Defaults to the assigned transaction time.
           format: date-time
+          description: Optional. Defaults to the assigned transaction time.
         externalReference:
           type: string
         requestId:
           type: string
         description:
           type: string
+      required:
+      - accountId
+      - currency
+      - totalAmount
+      - transactionStatus
+      - transactionType
     LedgerPostingLegDTO:
       type: object
       properties:
@@ -5331,21 +5682,21 @@ components:
         description:
           type: string
     LedgerPostingRequestDTO:
-      required:
-      - idempotencyKey
-      - legs
-      - transaction
       type: object
       properties:
         idempotencyKey:
-          minLength: 1
           type: string
+          minLength: 1
         transaction:
           $ref: "#/components/schemas/LedgerPostingHeaderDTO"
         legs:
           type: array
           items:
             $ref: "#/components/schemas/LedgerPostingLegDTO"
+      required:
+      - idempotencyKey
+      - legs
+      - transaction
     LedgerPostingDTO:
       type: object
       properties:
@@ -5358,36 +5709,34 @@ components:
         replayed:
           type: boolean
     LedgerReversalRequestDTO:
-      required:
-      - idempotencyKey
       type: object
       properties:
         idempotencyKey:
-          minLength: 1
           type: string
+          minLength: 1
+      required:
+      - idempotencyKey
     PaginationResponse:
       type: object
+      description: Represents a paginated response containing a list of items and
+        pagination metadata.
       properties:
         content:
           type: array
           description: The list of items for the current page.
-          items:
-            type: object
-            description: The list of items for the current page.
+          items: {}
         totalElements:
           type: integer
-          description: The total number of elements across all pages.
           format: int64
+          description: The total number of elements across all pages.
         totalPages:
           type: integer
-          description: The total number of pages based on the data size and page size.
           format: int32
+          description: The total number of pages based on the data size and page size.
         currentPage:
           type: integer
-          description: "The current page number, typically zero-based."
           format: int32
-      description: Represents a paginated response containing a list of items and
-        pagination metadata.
+          description: "The current page number, typically zero-based."
     AcceptedReserve:
       type: object
       properties:
@@ -5559,6 +5908,8 @@ components:
           $ref: "#/components/schemas/BalanceVector"
     PaginationResponseMoneyDTO:
       type: object
+      description: Represents a paginated response containing a list of items and
+        pagination metadata.
       properties:
         content:
           type: array
@@ -5567,27 +5918,17 @@ components:
             $ref: "#/components/schemas/MoneyDTO"
         totalElements:
           type: integer
-          description: The total number of elements across all pages.
           format: int64
+          description: The total number of elements across all pages.
         totalPages:
           type: integer
-          description: The total number of pages based on the data size and page size.
           format: int32
+          description: The total number of pages based on the data size and page size.
         currentPage:
           type: integer
-          description: "The current page number, typically zero-based."
           format: int32
-      description: Represents a paginated response containing a list of items and
-        pagination metadata.
+          description: "The current page number, typically zero-based."
     StatementMetadataDTO:
-      required:
-      - endDate
-      - generationDate
-      - includedDetails
-      - includedPending
-      - periodType
-      - startDate
-      - transactionCount
       type: object
       properties:
         dateCreated:
@@ -5625,13 +5966,21 @@ components:
           type: string
           format: date-time
         transactionCount:
-          minimum: 0
           type: integer
           format: int32
+          minimum: 0
         includedPending:
           type: boolean
         includedDetails:
           type: boolean
+      required:
+      - endDate
+      - generationDate
+      - includedDetails
+      - includedPending
+      - periodType
+      - startDate
+      - transactionCount
   securitySchemes:
     fundsBearer:
       type: http
