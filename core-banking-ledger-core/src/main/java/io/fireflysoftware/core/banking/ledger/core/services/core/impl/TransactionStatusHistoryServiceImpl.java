@@ -46,7 +46,7 @@ public class TransactionStatusHistoryServiceImpl implements TransactionStatusHis
     private TransactionStatusHistoryMapper mapper;
 
     @Autowired
-    private ManagedPostingGuard postingGuard;
+    private ManagedPostingGuardImpl postingGuard;
 
     @Override
     public Mono<PaginationResponse<TransactionStatusHistoryDTO>> listStatusHistory(UUID transactionId, PaginationRequest paginationRequest) {

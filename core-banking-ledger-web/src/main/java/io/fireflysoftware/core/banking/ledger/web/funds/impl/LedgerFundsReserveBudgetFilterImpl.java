@@ -20,15 +20,15 @@ import org.springframework.web.util.pattern.PathPatternParser;
 import reactor.core.publisher.Mono;
 
 /** The original technical window is exchange-owned and begins before authentication or body reads. */
-public final class LedgerFundsReserveBudgetFilter implements WebFilter,Ordered {
-    private static final String SCOPE=LedgerFundsReserveBudgetFilter.class.getName()+".original";
+public final class LedgerFundsReserveBudgetFilterImpl implements WebFilter,Ordered {
+    private static final String SCOPE=LedgerFundsReserveBudgetFilterImpl.class.getName()+".original";
     private static final PathPattern PATH=PathPatternParser.defaultInstance.parse("/api/v1/tenants/{tenant}/funds/reservations");
     private static final byte[] UNAVAILABLE="{\"code\":\"LEDGER_FIRST_RESERVE_UNAVAILABLE\"}".getBytes(StandardCharsets.UTF_8);
     private static final byte[] CACHE_KEY_REFUSED="{\"code\":\"LEDGER_FIRST_RESERVE_CACHE_KEY_REFUSED\"}".getBytes(StandardCharsets.UTF_8);
     private final LedgerMutationTime time;
     private final List<IdempotencyProperties> responseCaches;
-    public LedgerFundsReserveBudgetFilter(LedgerMutationTime time){this(time,List.of());}
-    public LedgerFundsReserveBudgetFilter(LedgerMutationTime time,List<IdempotencyProperties> responseCaches){
+    public LedgerFundsReserveBudgetFilterImpl(LedgerMutationTime time){this(time,List.of());}
+    public LedgerFundsReserveBudgetFilterImpl(LedgerMutationTime time,List<IdempotencyProperties> responseCaches){
         this.time=Objects.requireNonNull(time);this.responseCaches=List.copyOf(responseCaches);
     }
     @Override public int getOrder(){return Ordered.HIGHEST_PRECEDENCE;}

@@ -9,7 +9,7 @@ import io.fireflysoftware.core.banking.ledger.core.mappers.leg.TransactionLegMap
 import io.fireflysoftware.core.banking.ledger.core.services.core.*;
 import io.fireflysoftware.core.banking.ledger.core.services.core.impl.LedgerPostingServiceImpl;
 import io.fireflysoftware.core.banking.ledger.core.services.funds.*;
-import io.fireflysoftware.core.banking.ledger.core.services.funds.impl.FundsDatabaseContext;
+import io.fireflysoftware.core.banking.ledger.core.services.funds.impl.FundsDatabaseContextImpl;
 import io.fireflysoftware.core.banking.ledger.core.services.funds.impl.FundsMoneyServiceImpl;
 import io.fireflysoftware.core.banking.ledger.core.services.funds.impl.FundsReceiptServiceImpl;
 import io.fireflysoftware.core.banking.ledger.interfaces.dtos.funds.FundsContracts.*;
@@ -110,7 +110,7 @@ class FundsRepositoryNativeIT {
 
     private AnnotationConfigApplicationContext context() {
         var context = new AnnotationConfigApplicationContext();
-        context.register(Database.class, FundsRepositories.class, FundsDatabaseContext.class);
+        context.register(Database.class, FundsRepositories.class, FundsDatabaseContextImpl.class);
         context.registerBean("fundsMoneyService", FundsMoneyServiceImpl.class);
         context.registerBean("fundsReceiptService", FundsReceiptServiceImpl.class);
         context.registerBean("ledgerPostingService", LedgerPostingServiceImpl.class);

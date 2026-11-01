@@ -24,13 +24,13 @@ public class LedgerR2dbcConversions {
         return R2dbcCustomConversions.of(
                 PostgresDialect.INSTANCE,
                 List.of(
-                        new TransactionTypeWriter(), new TransactionTypeReader(),
-                        new TransactionStatusWriter(), new TransactionStatusReader()));
+                        new TransactionTypeWriterImpl(), new TransactionTypeReaderImpl(),
+                        new TransactionStatusWriterImpl(), new TransactionStatusReaderImpl()));
     }
 
     // The original PostgreSQL enum labels are lowercase; API enum names remain uppercase.
     @WritingConverter
-    static class TransactionTypeWriter implements Converter<TransactionTypeEnum, Parameter> {
+    static class TransactionTypeWriterImpl implements Converter<TransactionTypeEnum, Parameter> {
         public Parameter convert(TransactionTypeEnum source) {
             return Parameters.in(
                     PostgresqlObjectId.UNSPECIFIED, source.name().toLowerCase(Locale.ROOT));
@@ -38,14 +38,14 @@ public class LedgerR2dbcConversions {
     }
 
     @ReadingConverter
-    static class TransactionTypeReader implements Converter<String, TransactionTypeEnum> {
+    static class TransactionTypeReaderImpl implements Converter<String, TransactionTypeEnum> {
         public TransactionTypeEnum convert(String source) {
             return TransactionTypeEnum.valueOf(source.toUpperCase(Locale.ROOT));
         }
     }
 
     @WritingConverter
-    static class TransactionStatusWriter implements Converter<TransactionStatusEnum, Parameter> {
+    static class TransactionStatusWriterImpl implements Converter<TransactionStatusEnum, Parameter> {
         public Parameter convert(TransactionStatusEnum source) {
             return Parameters.in(
                     PostgresqlObjectId.UNSPECIFIED, source.name().toLowerCase(Locale.ROOT));
@@ -53,7 +53,7 @@ public class LedgerR2dbcConversions {
     }
 
     @ReadingConverter
-    static class TransactionStatusReader implements Converter<String, TransactionStatusEnum> {
+    static class TransactionStatusReaderImpl implements Converter<String, TransactionStatusEnum> {
         public TransactionStatusEnum convert(String source) {
             return TransactionStatusEnum.valueOf(source.toUpperCase(Locale.ROOT));
         }

@@ -53,7 +53,7 @@ class LedgerOwningMutationConfigurationTest {
             context.registerBean("transactionManager",R2dbcTransactionManager.class,()->manager);
             context.registerBean(TransactionMapper.class,()->mock(TransactionMapper.class));
             context.registerBean(TransactionLegMapper.class,()->mock(TransactionLegMapper.class));
-            context.register(OriginalRepositoryAdvice.class,FundsRepositories.class,FundsDatabaseContext.class);
+            context.register(OriginalRepositoryAdvice.class,FundsRepositories.class,FundsDatabaseContextImpl.class);
             context.registerBean("ledgerPostingService",LedgerPostingServiceImpl.class);
             context.registerBean("fundsMoneyService",FundsMoneyServiceImpl.class);
             context.registerBean("fundsExpiryCandidateService",FundsExpiryCandidateServiceImpl.class);

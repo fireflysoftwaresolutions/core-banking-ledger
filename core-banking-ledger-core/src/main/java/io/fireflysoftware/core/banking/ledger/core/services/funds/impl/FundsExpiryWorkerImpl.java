@@ -16,7 +16,7 @@
 
 package io.fireflysoftware.core.banking.ledger.core.services.funds.impl;
 
-import static io.fireflysoftware.core.banking.ledger.core.services.funds.impl.FundsErrors.fail;
+import static io.fireflysoftware.core.banking.ledger.core.services.funds.impl.FundsErrorsImpl.fail;
 
 import io.fireflysoftware.core.banking.ledger.core.services.funds.FundsMoneyService;
 import io.fireflysoftware.core.banking.ledger.core.services.funds.FundsExpiryCandidateService;
@@ -35,15 +35,15 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
 
-@Service
-public final class FundsExpiryWorker {
+@Service("fundsExpiryWorker")
+public final class FundsExpiryWorkerImpl {
     private final FundsExpiryCandidateService candidates;
     private final FundsMoneyService money;
     private final TransactionalOperator transaction;
 
-    public FundsExpiryWorker(
+    public FundsExpiryWorkerImpl(
             FundsRepositories repos,
-            FundsDatabaseContext context,
+            FundsDatabaseContextImpl context,
             FundsMoneyService money,
             ReactiveTransactionManager manager) {
         this.candidates = new FundsExpiryCandidateServiceImpl(repos, context);
@@ -54,7 +54,7 @@ public final class FundsExpiryWorker {
     public Mono<List<Reservation>> expire(SecurityPrincipal p, String tenant, ExpiryBatch input) {
         return Mono.defer(
                 () -> {
-                    FundsPolicy.require(p, tenant, "funds:expire");
+                    FundsPolicyImpl.require(p, tenant, "funds:expire");
                     if (input == null
                             || input.limit() == null
                             || input.limit() < 1

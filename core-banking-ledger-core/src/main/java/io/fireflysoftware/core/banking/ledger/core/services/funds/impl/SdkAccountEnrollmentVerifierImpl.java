@@ -16,7 +16,7 @@
 
 package io.fireflysoftware.core.banking.ledger.core.services.funds.impl;
 
-import static io.fireflysoftware.core.banking.ledger.core.services.funds.impl.FundsErrors.fail;
+import static io.fireflysoftware.core.banking.ledger.core.services.funds.impl.FundsErrorsImpl.fail;
 import io.fireflysoftware.core.banking.accounts.sdk.api.AccountFundsApi;
 import io.fireflysoftware.core.banking.accounts.sdk.invoker.ApiClient;
 import io.fireflysoftware.core.banking.ledger.core.services.funds.AccountEnrollmentVerifier;
@@ -34,12 +34,12 @@ import java.util.Set;
 
 
 
-@Component
-public class SdkAccountEnrollmentVerifier implements AccountEnrollmentVerifier {
+@Component("sdkAccountEnrollmentVerifier")
+public class SdkAccountEnrollmentVerifierImpl implements AccountEnrollmentVerifier {
     private final OAuth2ClientHelper oauth;
     private final String baseUrl, scopes;
 
-    public SdkAccountEnrollmentVerifier(
+    public SdkAccountEnrollmentVerifierImpl(
             @Value("${funds.accounts.base-url:}") String baseUrl,
             @Value("${funds.accounts.token-uri:}") String tokenUri,
             @Value("${funds.accounts.client-id:}") String clientId,

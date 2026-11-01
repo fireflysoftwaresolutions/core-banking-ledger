@@ -128,7 +128,7 @@ public final class LedgerAuditRecordServiceImpl implements LedgerAuditRecordServ
             });
         });
     }
-    private static void operationFields(LedgerAuditDigest d,FundsOperation op) {
+    private static void operationFields(LedgerAuditDigestImpl d,FundsOperation op) {
         d.field(op.getId().tenantId()).field(op.getId().operationId()).field(op.getKind()).field(op.getFingerprint())
                 .field(op.getReservationId()).field(op.getPostingId()).field(op.getSourceAccountId()).field(op.getDestinationAccountId())
                 .field(op.getClosedWithoutEffect());
@@ -138,13 +138,13 @@ public final class LedgerAuditRecordServiceImpl implements LedgerAuditRecordServ
         for(var leg:p.legs())require(("DEBIT".equals(leg.getLegType())?debit:credit).equals(leg.getAccountId())&&leg.getAmount().compareTo(amount)==0);
     }
     private static UUID postingId(LedgerPostingDTO result) { require(result!=null&&result.getTransaction()!=null&&result.getTransaction().getTransactionId()!=null);return result.getTransaction().getTransactionId(); }
-    private static LedgerAuditDigest base(String action,String tenant,UUID resource,UUID process,String key) { return new LedgerAuditDigest().field(action).field(tenant).field(resource).field(process).field(key); }
+    private static LedgerAuditDigestImpl base(String action,String tenant,UUID resource,UUID process,String key) { return new LedgerAuditDigestImpl().field(action).field(tenant).field(resource).field(process).field(key); }
     private static LedgerAuditEvidence postingEvidence(String action,String tenant,UUID process,String key,Posting p) {var d=base(action,tenant,p.value().getTransactionId(),process,key);postingFields(d,p);return evidence(action,tenant,"posting",p.value().getTransactionId(),process,key,d,null,null,null);}
-    private static void postingFields(LedgerAuditDigest d,Posting p) {
+    private static void postingFields(LedgerAuditDigestImpl d,Posting p) {
         var t=p.value();var h=p.history().value();d.field(t.getTransactionId()).field(p.claim().getIdempotencyKey()).field(p.claim().getInputFingerprint()).field(t.getAccountId()).field(t.getAccountSpaceId()).field(t.getTransactionType()).field(t.getTotalAmount()).field(t.getCurrency()).field(t.getRelatedTransactionId()).field(t.getRelationType()).field("LOCAL_DATE_TIME_UNKNOWN_ZONE").field(t.getTransactionDate()).field(t.getValueDate()).field(t.getBookingDate()).field(h.getTransactionStatusHistoryId()).field(h.getStatusCode()).field(h.getStatusStartDatetime()).field(p.history().linkedReversal());
         p.legs().stream().sorted(Comparator.comparing(v->v.getTransactionLegId().toString())).forEach(l->d.field(l.getTransactionLegId()).field(l.getAccountId()).field(l.getAccountSpaceId()).field(l.getLegType()).field(l.getAmount()).field(l.getCurrency()).field(l.getValueDate()).field(l.getBookingDate()));
     }
-    private static LedgerAuditEvidence evidence(String action,String tenant,String type,UUID resource,UUID process,String key,LedgerAuditDigest digest,Long time,String issuer,String subject) {return new LedgerAuditEvidence(action,tenant,type,resource,process,key,digest.finish(),time,issuer,subject);}
+    private static LedgerAuditEvidence evidence(String action,String tenant,String type,UUID resource,UUID process,String key,LedgerAuditDigestImpl digest,Long time,String issuer,String subject) {return new LedgerAuditEvidence(action,tenant,type,resource,process,key,digest.finish(),time,issuer,subject);}
     static String fundingFingerprint(Funding value) {
         try{return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(String.join("|","FUNDING",value.bankControlAccountId().toString(),value.customerAccountId().toString(),value.amount().stripTrailingZeros().toPlainString(),value.currency()).getBytes(StandardCharsets.UTF_8)));}
         catch(NoSuchAlgorithmException error){throw new IllegalStateException(error);}

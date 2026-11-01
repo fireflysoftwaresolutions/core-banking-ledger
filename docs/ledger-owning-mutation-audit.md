@@ -205,7 +205,7 @@ It must obtain the current authenticated principal from the existing
 `SecurityPrincipal` passed to `FundsMoneyService`; posting calls must use that
 same verified context rather than a returned posting DTO or a retained actor.
 The original caller-observed budget continues through this phase and all later
-work. `FundsDatabaseContext` and its existing `FundsPolicy.require` scope,
+work. `FundsDatabaseContextImpl` and its existing `FundsPolicyImpl.require` scope,
 account and finite-token checks remain necessary; they do not by themselves
 authorize an immutable audit capture.
 
@@ -216,7 +216,7 @@ an authenticated native issuance contract for the exact original command and
 current owner policy decision. It must obtain the UUID resource/legal-entity
 tenant from an independently qualified owner mapping. Ledger's String platform
 tenant cannot supply that UUID by parsing, and neither existing DTOs nor
-`FundsDatabaseContext` supply that missing mapping or native audit grant. No
+`FundsDatabaseContextImpl` supply that missing mapping or native audit grant. No
 generic shared SPI change is required for the call-local append implemented
 here; an owner-specific first-capture admission port and its genuine issuer
 remain required.

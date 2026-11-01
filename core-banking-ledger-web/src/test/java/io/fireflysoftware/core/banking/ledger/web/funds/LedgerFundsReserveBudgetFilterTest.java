@@ -23,11 +23,11 @@ class LedgerFundsReserveBudgetFilterTest {
         void advance(long seconds){now=now.plusSeconds(seconds);nanos.addAndGet(Duration.ofSeconds(seconds).toNanos());}
     }
     static WebFilter filter(LedgerMutationTime time)throws Exception {
-        try{return (WebFilter)Class.forName("io.fireflysoftware.core.banking.ledger.web.funds.impl.LedgerFundsReserveBudgetFilter").getConstructor(LedgerMutationTime.class).newInstance(time);}
+        try{return (WebFilter)Class.forName("io.fireflysoftware.core.banking.ledger.web.funds.impl.LedgerFundsReserveBudgetFilterImpl").getConstructor(LedgerMutationTime.class).newInstance(time);}
         catch(ClassNotFoundException legacy){return (exchange,chain)->chain.filter(exchange);}
     }
     static R2dbcOperationBudget budget(ServerWebExchange exchange)throws Exception {
-        try{return (R2dbcOperationBudget)Class.forName("io.fireflysoftware.core.banking.ledger.web.funds.impl.LedgerFundsReserveBudgetFilter").getMethod("requireBudget",ServerWebExchange.class).invoke(null,exchange);}
+        try{return (R2dbcOperationBudget)Class.forName("io.fireflysoftware.core.banking.ledger.web.funds.impl.LedgerFundsReserveBudgetFilterImpl").getMethod("requireBudget",ServerWebExchange.class).invoke(null,exchange);}
         catch(ClassNotFoundException legacy){return null;}
     }
     static Mono<Void> success(ServerWebExchange exchange){exchange.getResponse().setStatusCode(HttpStatus.CREATED);return exchange.getResponse().writeWith(Mono.fromSupplier(()->exchange.getResponse().bufferFactory().wrap("{\"reservationId\":\"must-not-leak\"}".getBytes(StandardCharsets.UTF_8))));}

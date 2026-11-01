@@ -28,14 +28,14 @@ class FundsExpiryWorkerBehaviorTest {
         final AtomicBoolean active=new AtomicBoolean();
         final FundsNativeRepository nativeOps=mock(FundsNativeRepository.class);
         final FundsReservationRepository reservations=mock(FundsReservationRepository.class);
-        final FundsDatabaseContext context=mock(FundsDatabaseContext.class);
+        final FundsDatabaseContextImpl context=mock(FundsDatabaseContextImpl.class);
         final FundsMoneyService money=mock(FundsMoneyService.class);
         final ReactiveTransactionManager manager=mock(ReactiveTransactionManager.class);
         final SecurityPrincipal principal=SecurityPrincipal.builder().subject("legacy-expiry-unit").tenantId("owned").scopes(Set.of("funds:expire")).claims(Map.of("exp",Instant.now().plusSeconds(120),"funds_accounts",List.of(FIRST.toString(),SECOND.toString()))).build();
-        final FundsExpiryWorker worker;
+        final FundsExpiryWorkerImpl worker;
         Fixture(){
             var repos=new FundsRepositories(null,reservations,null,null,null,null,null,null,null,null,null,nativeOps);
-            worker=new FundsExpiryWorker(repos,context,money,manager);
+            worker=new FundsExpiryWorkerImpl(repos,context,money,manager);
             when(manager.getReactiveTransaction(any())).thenReturn(Mono.fromSupplier(()->{active.set(true);return mock(ReactiveTransaction.class);}));
             when(manager.commit(any())).thenReturn(Mono.fromRunnable(()->active.set(false)));
             when(manager.rollback(any())).thenReturn(Mono.fromRunnable(()->active.set(false)));

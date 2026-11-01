@@ -3,7 +3,7 @@ package io.fireflysoftware.core.banking.ledger.web.funds;
 
 import io.fireflysoftware.core.banking.ledger.core.services.core.LedgerAuditRecordService;
 import io.fireflysoftware.core.banking.ledger.core.services.funds.ownership.*;
-import io.fireflysoftware.core.banking.ledger.web.funds.impl.LedgerFundsReserveBudgetFilter;
+import io.fireflysoftware.core.banking.ledger.web.funds.impl.LedgerFundsReserveBudgetFilterImpl;
 import org.fireflyframework.security.spi.SecurityContextPort;
 import org.fireflyframework.web.idempotency.config.IdempotencyProperties;
 import org.springframework.beans.factory.ObjectProvider;
@@ -17,7 +17,7 @@ import org.springframework.context.annotation.Configuration;
 @ConditionalOnProperty(name="firefly.ledger.first-reserve-capture.enabled",havingValue="true")
 public class LedgerFundsReserveCaptureConfiguration {
     @Bean
-    LedgerFundsReserveBudgetFilter ledgerFundsReserveBudgetFilter(LedgerMutationTime time,
+    LedgerFundsReserveBudgetFilterImpl ledgerFundsReserveBudgetFilter(LedgerMutationTime time,
             LedgerOwningMutationService mutations,LedgerFundsFirstCaptureProvider provider,
             SecurityContextPort principals,LedgerMutationAuditAppender audit,LedgerAuditRecordService records,
             LedgerFundsReserveWitnessService witnesses,ObjectProvider<IdempotencyProperties> responseCaches,
@@ -26,6 +26,6 @@ public class LedgerFundsReserveCaptureConfiguration {
             @Value("${firefly.ledger.reserve-completed-witness.enabled:false}") boolean witnessEnabled) {
         if(!owningEnabled||!auditEnabled||!witnessEnabled)
             throw new IllegalStateException("FIRST reserve ingress requires owning audit and witness capabilities");
-        return new LedgerFundsReserveBudgetFilter(time,responseCaches.orderedStream().toList());
+        return new LedgerFundsReserveBudgetFilterImpl(time,responseCaches.orderedStream().toList());
     }
 }

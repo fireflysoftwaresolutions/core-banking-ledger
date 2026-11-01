@@ -1,6 +1,6 @@
 package io.fireflysoftware.core.banking.ledger.core.services.funds.impl;
 
-import static io.fireflysoftware.core.banking.ledger.core.services.funds.impl.FundsErrors.fail;
+import static io.fireflysoftware.core.banking.ledger.core.services.funds.impl.FundsErrorsImpl.fail;
 
 import io.fireflysoftware.core.banking.ledger.core.services.core.LedgerPostingService;
 import io.fireflysoftware.core.banking.ledger.core.services.funds.FundsMoneyService;
@@ -27,11 +27,11 @@ import java.util.*;
 @Service("fundsMoneyService")
 public class FundsMoneyServiceImpl implements FundsMoneyService {
     private final FundsRepositories repos;
-    private final FundsDatabaseContext context;
+    private final FundsDatabaseContextImpl context;
     private final LedgerPostingService postings;
 
     public FundsMoneyServiceImpl(
-            FundsRepositories repos, FundsDatabaseContext context, LedgerPostingService postings) {
+            FundsRepositories repos, FundsDatabaseContextImpl context, LedgerPostingService postings) {
         this.repos = repos;
         this.context = context;
         this.postings = postings;
@@ -42,7 +42,7 @@ public class FundsMoneyServiceImpl implements FundsMoneyService {
         return Mono.defer(
                 () -> {
                     if (input == null) throw fail(400, "FUNDING_INPUT_REQUIRED");
-                    FundsPolicy.require(
+                    FundsPolicyImpl.require(
                             p,
                             tenant,
                             "funds:fund",
@@ -84,7 +84,7 @@ public class FundsMoneyServiceImpl implements FundsMoneyService {
                                                             input.customerAccountId())
                                                     .flatMap(
                                                             operation -> {
-                                                                FundsPolicy.require(
+                                                                FundsPolicyImpl.require(
                                                                         p,
                                                                         tenant,
                                                                         "funds:fund",
@@ -190,7 +190,7 @@ public class FundsMoneyServiceImpl implements FundsMoneyService {
         return Mono.defer(
                 () -> {
                     if (input == null) throw fail(400, "RESERVATION_INPUT_REQUIRED");
-                    FundsPolicy.require(
+                    FundsPolicyImpl.require(
                             p,
                             tenant,
                             "funds:reserve",
@@ -220,7 +220,7 @@ public class FundsMoneyServiceImpl implements FundsMoneyService {
                                                             input.destinationAccountId())
                                                     .flatMap(
                                                             operation -> {
-                                                                FundsPolicy.require(
+                                                                FundsPolicyImpl.require(
                                                                         p,
                                                                         tenant,
                                                                         "funds:reserve",
@@ -283,7 +283,7 @@ public class FundsMoneyServiceImpl implements FundsMoneyService {
                                                                                 input.ttlSeconds(),
                                                                                 input
                                                                                         .notAfterEpochMillis())
-                                                                                                                    .onErrorMap(FundsErrors::nativeBusinessConflict)
+                                                                                                                    .onErrorMap(FundsErrorsImpl::nativeBusinessConflict)
                                                                         .flatMap(
                                                                                 admission ->
                                                                                         createPosting(
@@ -372,12 +372,12 @@ public class FundsMoneyServiceImpl implements FundsMoneyService {
     public Mono<Reservation> reservation(SecurityPrincipal p, String tenant, UUID id) {
         return Mono.defer(
                 () -> {
-                    FundsPolicy.require(p, tenant, "funds:read");
-                    return context.establish(p, tenant, "READ", FundsPolicy.grantedAccounts(p))
+                    FundsPolicyImpl.require(p, tenant, "funds:read");
+                    return context.establish(p, tenant, "READ", FundsPolicyImpl.grantedAccounts(p))
                             .then(read(tenant, id, false))
                             .map(
                                     row -> {
-                                        FundsPolicy.require(
+                                        FundsPolicyImpl.require(
                                                 p,
                                                 tenant,
                                                 "funds:read",
@@ -393,8 +393,8 @@ public class FundsMoneyServiceImpl implements FundsMoneyService {
             SecurityPrincipal p, String tenant, UUID operation) {
         return Mono.defer(
                 () -> {
-                    FundsPolicy.require(p, tenant, "funds:read");
-                    return context.establish(p, tenant, "READ", FundsPolicy.grantedAccounts(p))
+                    FundsPolicyImpl.require(p, tenant, "funds:read");
+                    return context.establish(p, tenant, "READ", FundsPolicyImpl.grantedAccounts(p))
                             .then(operationGate(tenant, operation))
                             .then(
                                     repos.operations()
@@ -407,7 +407,7 @@ public class FundsMoneyServiceImpl implements FundsMoneyService {
                             .flatMap(row -> read(tenant, row.getReservationId(), false))
                             .map(
                                     row -> {
-                                        FundsPolicy.require(
+                                        FundsPolicyImpl.require(
                                                 p,
                                                 tenant,
                                                 "funds:read",
@@ -426,12 +426,12 @@ public class FundsMoneyServiceImpl implements FundsMoneyService {
                         throw fail(400, "FUNDS_ACTION_REQUIRED");
                     String purpose = input.action().name(),
                             scope = "funds:" + purpose.toLowerCase(Locale.ROOT);
-                    FundsPolicy.require(p, tenant, scope);
-                    return context.establish(p, tenant, purpose, FundsPolicy.grantedAccounts(p))
+                    FundsPolicyImpl.require(p, tenant, scope);
+                    return context.establish(p, tenant, purpose, FundsPolicyImpl.grantedAccounts(p))
                             .then(read(tenant, id, false))
                             .flatMap(
                                     observed -> {
-                                        FundsPolicy.require(
+                                        FundsPolicyImpl.require(
                                                 p,
                                                 tenant,
                                                 scope,
@@ -460,7 +460,7 @@ public class FundsMoneyServiceImpl implements FundsMoneyService {
                                                                                                         input)
                                                                                                 .flatMap(
                                                                                                         replay -> {
-                                                                                                            FundsPolicy
+                                                                                                            FundsPolicyImpl
                                                                                                                     .require(
                                                                                                                             p,
                                                                                                                             tenant,
@@ -484,7 +484,7 @@ public class FundsMoneyServiceImpl implements FundsMoneyService {
                                                                                                                             input
                                                                                                                                     .actionId(),
                                                                                                                             purpose)
-                                                                                                                    .onErrorMap(FundsErrors::nativeBusinessConflict)
+                                                                                                                    .onErrorMap(FundsErrorsImpl::nativeBusinessConflict)
                                                                                                                     .flatMap(
                                                                                                                             admission ->
                                                                                                                                     transition(
@@ -688,7 +688,7 @@ public class FundsMoneyServiceImpl implements FundsMoneyService {
                                                                         fail(
                                                                                 404,
                                                                                 "FUNDS_ACCOUNT_NOT_FOUND")))
-                                                        .map(FundsRows::account)))
+                                                        .map(FundsRowsImpl::account)))
                 .collectMap(Account::accountId);
     }
 
@@ -700,7 +700,7 @@ public class FundsMoneyServiceImpl implements FundsMoneyService {
         return (locked
                         ? repos.reservations().findLockedByTenantIdAndReservationId(tenant, id)
                         : repos.reservations().findByTenantIdAndReservationId(tenant, id))
-                .map(FundsRows::reservation)
+                .map(FundsRowsImpl::reservation)
                 .switchIfEmpty(Mono.error(fail(404, "FUNDS_RESERVATION_NOT_FOUND")));
     }
 

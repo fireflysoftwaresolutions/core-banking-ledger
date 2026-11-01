@@ -1,7 +1,7 @@
 /* Copyright 2026 Firefly Software Foundation. Licensed under the Apache License, Version 2.0. */
 package io.fireflysoftware.core.banking.ledger.core.services.funds.impl;
 
-import static io.fireflysoftware.core.banking.ledger.core.services.funds.impl.FundsErrors.fail;
+import static io.fireflysoftware.core.banking.ledger.core.services.funds.impl.FundsErrorsImpl.fail;
 
 import io.fireflysoftware.core.banking.ledger.core.services.funds.FundsExpiryCandidateService;
 import io.fireflysoftware.core.banking.ledger.interfaces.dtos.funds.FundsContracts.ExpiryBatch;
@@ -17,19 +17,19 @@ import reactor.core.publisher.Mono;
 @Service("fundsExpiryCandidateService")
 public final class FundsExpiryCandidateServiceImpl implements FundsExpiryCandidateService {
     private final FundsRepositories repos;
-    private final FundsDatabaseContext context;
+    private final FundsDatabaseContextImpl context;
 
-    public FundsExpiryCandidateServiceImpl(FundsRepositories repos, FundsDatabaseContext context) {
+    public FundsExpiryCandidateServiceImpl(FundsRepositories repos, FundsDatabaseContextImpl context) {
         this.repos = repos;
         this.context = context;
     }
 
     public Mono<List<UUID>> select(SecurityPrincipal principal, String tenant, ExpiryBatch input) {
         return Mono.defer(() -> {
-            FundsPolicy.require(principal, tenant, "funds:expire");
+            FundsPolicyImpl.require(principal, tenant, "funds:expire");
             if (input == null || input.limit() == null || input.limit() < 1 || input.limit() > 100)
                 return Mono.error(fail(400, "BOUNDED_EXPIRY_BATCH_REQUIRED"));
-            return context.establish(principal, tenant, "EXPIRE", FundsPolicy.grantedAccounts(principal))
+            return context.establish(principal, tenant, "EXPIRE", FundsPolicyImpl.grantedAccounts(principal))
                     .then(repos.nativeOps().databaseNow())
                     .flatMapMany(now -> repos.reservations()
                             .findByTenantIdAndStateAndExpiresAtLessThanEqualOrderByExpiresAtAscReservationIdAsc(

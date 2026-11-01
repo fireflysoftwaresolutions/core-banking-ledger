@@ -8,15 +8,15 @@ import java.security.*;
 import java.util.HexFormat;
 
 /** Owner witness encoding; Jafly remains responsible for the canonical event/record chain. */
-final class LedgerAuditDigest {
+final class LedgerAuditDigestImpl {
     private final MessageDigest digest;
     private int bytes;
-    LedgerAuditDigest() {
+    LedgerAuditDigestImpl() {
         try { digest=MessageDigest.getInstance("SHA-256"); }
         catch(NoSuchAlgorithmException error) { throw new IllegalStateException(error); }
         field("firefly.ledger.audit.witness"); field(1);
     }
-    LedgerAuditDigest field(Object value) {
+    LedgerAuditDigestImpl field(Object value) {
         byte[] raw=value==null?null:(value instanceof BigDecimal decimal?decimal.stripTrailingZeros().toPlainString():value.toString()).getBytes(StandardCharsets.UTF_8);
         int size=raw==null?0:raw.length;
         if(size>65536 || bytes>1048576-size-4) throw new IllegalStateException("Bounded Ledger witness required");

@@ -5,7 +5,7 @@ import io.fireflysoftware.core.banking.ledger.core.services.core.LedgerPostingSe
 import io.fireflysoftware.core.banking.ledger.core.services.core.LedgerPostingIntent;
 import io.fireflysoftware.core.banking.ledger.core.services.core.LedgerAuditRecordService;
 import io.fireflysoftware.core.banking.ledger.core.services.funds.FundsMoneyService;
-import io.fireflysoftware.core.banking.ledger.core.services.funds.impl.FundsPolicy;
+import io.fireflysoftware.core.banking.ledger.core.services.funds.impl.FundsPolicyImpl;
 import io.fireflysoftware.core.banking.ledger.core.services.funds.ownership.*;
 import io.fireflysoftware.core.banking.ledger.interfaces.dtos.core.*;
 import io.fireflysoftware.core.banking.ledger.interfaces.dtos.funds.FundsContracts.*;
@@ -98,7 +98,7 @@ public final class LedgerOwningMutationServiceImpl implements LedgerOwningMutati
         final R2dbcOperationBudget ingress;
         try {
             Objects.requireNonNull(original);original.remaining();
-            FundsPolicy.require(p,tenant,"funds:reserve",request==null?null:request.sourceAccountId(),request==null?null:request.destinationAccountId());
+            FundsPolicyImpl.require(p,tenant,"funds:reserve",request==null?null:request.sourceAccountId(),request==null?null:request.destinationAccountId());
             command=LedgerFundsFirstCaptureProvider.Command.reserve(p,tenant,request);
             var until=firstCapture.time().clock().instant().plusSeconds(5);
             var expiration=p.claim("exp",Instant.class);

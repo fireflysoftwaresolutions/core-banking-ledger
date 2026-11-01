@@ -17,7 +17,7 @@
 
 package io.fireflysoftware.core.banking.ledger.core.services.core;
 
-import io.fireflysoftware.core.banking.ledger.core.services.core.impl.ManagedPostingGuard;
+import io.fireflysoftware.core.banking.ledger.core.services.core.impl.ManagedPostingGuardImpl;
 import io.fireflysoftware.core.banking.ledger.core.services.core.impl.TransactionStatusHistoryServiceImpl;
 
 import org.fireflyframework.core.queries.PaginationRequest;
@@ -59,7 +59,7 @@ public class TransactionStatusHistoryServiceImplTest {
     private TransactionStatusHistoryMapper mapper;
 
     @Mock
-    private ManagedPostingGuard postingGuard;
+    private ManagedPostingGuardImpl postingGuard;
 
     @InjectMocks
     private TransactionStatusHistoryServiceImpl service;

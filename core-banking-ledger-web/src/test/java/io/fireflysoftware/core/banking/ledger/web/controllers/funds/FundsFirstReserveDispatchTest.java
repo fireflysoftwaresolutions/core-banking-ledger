@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import io.fireflysoftware.core.banking.ledger.core.services.funds.*;
 import io.fireflysoftware.core.banking.ledger.core.services.funds.ownership.*;
 import io.fireflysoftware.core.banking.ledger.interfaces.dtos.funds.FundsContracts.*;
-import io.fireflysoftware.core.banking.ledger.web.funds.impl.LedgerFundsReserveBudgetFilter;
+import io.fireflysoftware.core.banking.ledger.web.funds.impl.LedgerFundsReserveBudgetFilterImpl;
 import java.lang.reflect.Proxy;
 import java.time.Clock;
 import java.time.Instant;
@@ -24,7 +24,7 @@ class FundsFirstReserveDispatchTest {
     static FundsController controller(FundsMoneyService money,LedgerOwningMutationService first,boolean enabled)throws Exception {
         try{var factory=new DefaultListableBeanFactory();if(first!=null)factory.registerSingleton("first",first);
             return FundsController.class.getConstructor(FundsAuthority.class,FundsMoneyService.class,
-                io.fireflysoftware.core.banking.ledger.core.services.funds.impl.FundsExpiryWorker.class,FundsReconciliationService.class,
+                io.fireflysoftware.core.banking.ledger.core.services.funds.impl.FundsExpiryWorkerImpl.class,FundsReconciliationService.class,
                 boolean.class,org.springframework.beans.factory.ObjectProvider.class).newInstance(null,money,null,null,enabled,factory.getBeanProvider(LedgerOwningMutationService.class));}
         catch(NoSuchMethodException baseline){return new FundsController(null,money,null,null);}
     }
@@ -38,8 +38,8 @@ class FundsFirstReserveDispatchTest {
         var money=proxy(FundsMoneyService.class,(o,m,a)->{legacy.incrementAndGet();return Mono.empty();});
         var first=proxy(LedgerOwningMutationService.class,(o,m,a)->{assertEquals("reserveFirstCapture",m.getName());assertSame(principal,a[1]);assertEquals("tenant",a[2]);calls.incrementAndGet();captured.set((R2dbcOperationBudget)a[0]);return Mono.empty();});
         var controller=controller(money,first,true);var exchange=MockServerWebExchange.from(MockServerHttpRequest.post("/api/v1/tenants/tenant/funds/reservations"));
-        var filter=new LedgerFundsReserveBudgetFilter(new LedgerMutationTime(Clock.fixed(Instant.now(),ZoneOffset.UTC),System::nanoTime));
-        filter.filter(exchange,e->{try{var budget=LedgerFundsReserveBudgetFilter.requireBudget(e);return reserve(controller,principal,exchange).doOnSuccess(v->assertSame(budget,captured.get())).then();}catch(Exception error){return Mono.error(error);}}).block();
+        var filter=new LedgerFundsReserveBudgetFilterImpl(new LedgerMutationTime(Clock.fixed(Instant.now(),ZoneOffset.UTC),System::nanoTime));
+        filter.filter(exchange,e->{try{var budget=LedgerFundsReserveBudgetFilterImpl.requireBudget(e);return reserve(controller,principal,exchange).doOnSuccess(v->assertSame(budget,captured.get())).then();}catch(Exception error){return Mono.error(error);}}).block();
         assertEquals(1,calls.get());assertEquals(0,legacy.get());
     }
     @Test void disabledDispatchRetainsTheOriginalMoneyPathWithoutNewDependencies()throws Exception {

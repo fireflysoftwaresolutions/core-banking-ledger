@@ -72,8 +72,8 @@ public final class FundsContracts {
             BigDecimal amount,
             String currency,
             int ttlSeconds,
-            @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = ExactDeadline.class)
-                    @tools.jackson.databind.annotation.JsonDeserialize(using = ExactDeadline3.class)
+            @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = ExactDeadlineImpl.class)
+                    @tools.jackson.databind.annotation.JsonDeserialize(using = ExactDeadline3Impl.class)
                     Long notAfterEpochMillis) {
         public Reserve(
                 UUID operationId,
@@ -93,7 +93,7 @@ public final class FundsContracts {
         }
     }
 
-    public static final class ExactDeadline
+    public static final class ExactDeadlineImpl
             extends com.fasterxml.jackson.databind.JsonDeserializer<Long> {
         @Override
         public Long deserialize(
@@ -106,7 +106,7 @@ public final class FundsContracts {
         }
     }
 
-    public static final class ExactDeadline3
+    public static final class ExactDeadline3Impl
             extends tools.jackson.databind.ValueDeserializer<Long> {
         @Override
         public Long deserialize(

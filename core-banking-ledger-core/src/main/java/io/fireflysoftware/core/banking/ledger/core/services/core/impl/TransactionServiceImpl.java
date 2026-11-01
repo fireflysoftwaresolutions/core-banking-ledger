@@ -106,7 +106,7 @@ public class TransactionServiceImpl implements TransactionService {
     public Mono<TransactionDTO> updateTransaction(UUID transactionId, TransactionDTO transactionDTO) {
         return repository.findById(transactionId)
                 .flatMap(existingTransaction -> {
-                    ManagedPostingGuard.requireLegacy(existingTransaction);
+                    ManagedPostingGuardImpl.requireLegacy(existingTransaction);
                     TransactionStatusEnum oldStatus = existingTransaction.getTransactionStatus();
                     Transaction updatedTransaction = mapper.toEntity(transactionDTO);
                     updatedTransaction.setTransactionId(existingTransaction.getTransactionId());
@@ -138,7 +138,7 @@ public class TransactionServiceImpl implements TransactionService {
     @Override
     public Mono<Void> deleteTransaction(UUID transactionId) {
         return repository.findById(transactionId)
-                .doOnNext(ManagedPostingGuard::requireLegacy)
+                .doOnNext(ManagedPostingGuardImpl::requireLegacy)
                 .flatMap(repository::delete);
     }
 
@@ -171,7 +171,7 @@ public class TransactionServiceImpl implements TransactionService {
     public Mono<TransactionDTO> updateTransactionStatus(UUID transactionId, TransactionStatusEnum newStatus, String reason) {
         return repository.findById(transactionId)
                 .flatMap(transaction -> {
-                    ManagedPostingGuard.requireLegacy(transaction);
+                    ManagedPostingGuardImpl.requireLegacy(transaction);
                     TransactionStatusEnum oldStatus = transaction.getTransactionStatus();
 
                     // Only update if status is different

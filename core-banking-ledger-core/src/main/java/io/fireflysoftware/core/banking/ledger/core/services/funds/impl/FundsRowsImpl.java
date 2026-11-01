@@ -3,8 +3,8 @@ package io.fireflysoftware.core.banking.ledger.core.services.funds.impl;
 import io.fireflysoftware.core.banking.ledger.interfaces.dtos.funds.FundsContracts.*;
 import io.fireflysoftware.core.banking.ledger.models.entities.funds.*;
 
-final class FundsRows {
-    private FundsRows() {}
+final class FundsRowsImpl {
+    private FundsRowsImpl() {}
 
     static Account account(FundsAccount a) {
         return new Account(

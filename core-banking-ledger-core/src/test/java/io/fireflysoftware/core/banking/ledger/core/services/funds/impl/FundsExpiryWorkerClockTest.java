@@ -52,7 +52,7 @@ class FundsExpiryWorkerClockTest {
                 });
         var repos = new FundsRepositories(null, reservations, null, null, null, null, null,
                 null, null, null, null, nativeOps);
-        var context = mock(FundsDatabaseContext.class);
+        var context = mock(FundsDatabaseContextImpl.class);
         when(context.establish(any(), eq("owned"), eq("EXPIRE"), any(java.util.UUID[].class)))
                 .thenReturn(Mono.defer(() -> {
                     assertThat(active).isTrue();
@@ -72,13 +72,13 @@ class FundsExpiryWorkerClockTest {
                         java.util.List.of("00000000-0000-0000-0000-000000000002"))).build();
         try (var beans = new AnnotationConfigApplicationContext()) {
             beans.registerBean(FundsRepositories.class, () -> repos);
-            beans.registerBean(FundsDatabaseContext.class, () -> context);
+            beans.registerBean(FundsDatabaseContextImpl.class, () -> context);
             beans.registerBean(FundsMoneyService.class, () -> mock(FundsMoneyService.class));
             beans.registerBean(ReactiveTransactionManager.class, () -> manager);
             beans.registerBean(Clock.class, () -> Clock.fixed(Instant.ofEpochMilli(appMillis), ZoneOffset.UTC));
-            beans.registerBean(FundsExpiryWorker.class);
+            beans.registerBean(FundsExpiryWorkerImpl.class);
             beans.refresh();
-            StepVerifier.create(beans.getBean(FundsExpiryWorker.class).expire(principal, "owned", new ExpiryBatch(2)))
+            StepVerifier.create(beans.getBean(FundsExpiryWorkerImpl.class).expire(principal, "owned", new ExpiryBatch(2)))
                     .assertNext(rows -> assertThat(rows).isEmpty()).verifyComplete();
         }
         assertThat(active).isFalse();

@@ -16,7 +16,7 @@
 
 package io.fireflysoftware.core.banking.ledger.core.services.funds.impl;
 
-import static io.fireflysoftware.core.banking.ledger.core.services.funds.impl.FundsErrors.fail;
+import static io.fireflysoftware.core.banking.ledger.core.services.funds.impl.FundsErrorsImpl.fail;
 
 import io.fireflysoftware.core.banking.ledger.models.repositories.funds.FundsNativeRepository;
 
@@ -29,11 +29,11 @@ import java.util.Arrays;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-@Component
-public final class FundsDatabaseContext {
+@Component("fundsDatabaseContext")
+public final class FundsDatabaseContextImpl {
     private final FundsNativeRepository repository;
 
-    public FundsDatabaseContext(FundsNativeRepository repository) {
+    public FundsDatabaseContextImpl(FundsNativeRepository repository) {
         this.repository = repository;
     }
 
@@ -52,7 +52,7 @@ public final class FundsDatabaseContext {
                     case "RECONCILE" -> "funds:reconcile";
                     default -> throw fail(403, "SERVER_FUNDS_PURPOSE_REQUIRED");
                 };
-        FundsPolicy.require(p, tenant, scope, accounts);
+        FundsPolicyImpl.require(p, tenant, scope, accounts);
         Object expiration = p.claims().get("exp");
         if (!(expiration instanceof java.time.Instant expires)
                 || expires.isAfter(java.time.Instant.ofEpochMilli(253402300799999L)))

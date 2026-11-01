@@ -1,6 +1,6 @@
 package io.fireflysoftware.core.banking.ledger.core.services.funds.impl;
 
-import static io.fireflysoftware.core.banking.ledger.core.services.funds.impl.FundsErrors.fail;
+import static io.fireflysoftware.core.banking.ledger.core.services.funds.impl.FundsErrorsImpl.fail;
 
 import io.fireflysoftware.core.banking.ledger.core.services.funds.AccountEnrollmentVerifier;
 import io.fireflysoftware.core.banking.ledger.core.services.funds.FundsAuthority;
@@ -25,13 +25,13 @@ public class FundsAuthorityImpl implements FundsAuthority {
     private final FundsRepositories repos;
     private final String currencyPolicy;
     private final AccountEnrollmentVerifier verifier;
-    private final FundsDatabaseContext context;
+    private final FundsDatabaseContextImpl context;
 
     public FundsAuthorityImpl(
             FundsRepositories repos,
             @Value("${funds.currency-policy.version:}") String currencyPolicy,
             AccountEnrollmentVerifier verifier,
-            FundsDatabaseContext context) {
+            FundsDatabaseContextImpl context) {
         this.repos = repos;
         this.currencyPolicy = currencyPolicy;
         this.verifier = verifier;
@@ -43,7 +43,7 @@ public class FundsAuthorityImpl implements FundsAuthority {
             SecurityPrincipal p, String tenant, UUID accountId, Enrollment input) {
         return Mono.defer(
                 () -> {
-                    FundsPolicy.require(p, tenant, "funds:enroll", accountId);
+                    FundsPolicyImpl.require(p, tenant, "funds:enroll", accountId);
                     if (input == null
                             || input.enrollmentId() == null
                             || input.contractId() == null
@@ -53,7 +53,7 @@ public class FundsAuthorityImpl implements FundsAuthority {
                             || currencyPolicy.isBlank()
                             || currencyPolicy.length() > 100)
                         throw fail(400, "EXPLICIT_FUNDS_ENROLLMENT_REQUIRED");
-                    FundsPolicy.enrollment(
+                    FundsPolicyImpl.enrollment(
                             p,
                             tenant,
                             accountId,
@@ -68,7 +68,7 @@ public class FundsAuthorityImpl implements FundsAuthority {
                     }
                     if (scale < 0 || scale > 18) throw fail(400, "UNSUPPORTED_FUNDS_PRECISION");
                     if (input.kind() == Kind.BANK_CONTROL)
-                        FundsPolicy.require(p, tenant, "funds:bank-enroll", accountId);
+                        FundsPolicyImpl.require(p, tenant, "funds:bank-enroll", accountId);
                     var entity =
                             FundsAccount.builder()
                                     .accountId(accountId)
@@ -90,12 +90,12 @@ public class FundsAuthorityImpl implements FundsAuthority {
                                     repos.accounts()
                                             .findLockedByTenantIdAndAccountId(tenant, accountId))
                             .switchIfEmpty(Mono.defer(() -> repos.writes().insertAccount(entity)))
-                            .map(FundsRows::account)
+                            .map(FundsRowsImpl::account)
                             .flatMap(
                                     account -> {
-                                        FundsPolicy.require(p, tenant, "funds:enroll", accountId);
+                                        FundsPolicyImpl.require(p, tenant, "funds:enroll", accountId);
                                         if (input.kind() == Kind.BANK_CONTROL)
-                                            FundsPolicy.require(
+                                            FundsPolicyImpl.require(
                                                     p, tenant, "funds:bank-enroll", accountId);
                                         if (!account.enrollmentId().equals(input.enrollmentId())
                                                 || !account.contractId().equals(input.contractId())
@@ -116,7 +116,7 @@ public class FundsAuthorityImpl implements FundsAuthority {
             SecurityPrincipal p, String tenant, UUID accountId, Control input) {
         return Mono.defer(
                 () -> {
-                    FundsPolicy.require(p, tenant, "funds:control", accountId);
+                    FundsPolicyImpl.require(p, tenant, "funds:control", accountId);
                     if (input == null || input.actionId() == null || input.state() == null)
                         throw fail(400, "FUNDS_CONTROL_REQUIRED");
                     var key = new FundsControlId(tenant, input.actionId());
@@ -126,10 +126,10 @@ public class FundsAuthorityImpl implements FundsAuthority {
                                     repos.accounts()
                                             .findLockedByTenantIdAndAccountId(tenant, accountId))
                             .switchIfEmpty(Mono.error(fail(404, "FUNDS_ACCOUNT_NOT_FOUND")))
-                            .map(FundsRows::account)
+                            .map(FundsRowsImpl::account)
                             .flatMap(
                                     current -> {
-                                        FundsPolicy.require(p, tenant, "funds:control", accountId);
+                                        FundsPolicyImpl.require(p, tenant, "funds:control", accountId);
                                         return repos.controls()
                                                 .findById(key)
                                                 .flatMap(
@@ -198,7 +198,7 @@ public class FundsAuthorityImpl implements FundsAuthority {
                                                                             .then(
                                                                                     Mono.defer(
                                                                                             () -> {
-                                                                                                FundsPolicy
+                                                                                                FundsPolicyImpl
                                                                                                         .require(
                                                                                                                 p,
                                                                                                                 tenant,
@@ -229,7 +229,7 @@ public class FundsAuthorityImpl implements FundsAuthority {
                                                                                                                     tenant,
                                                                                                                     accountId)
                                                                                                             .map(
-                                                                                                                    FundsRows
+                                                                                                                    FundsRowsImpl
                                                                                                                             ::account)
                                                                                                     : Mono
                                                                                                             .error(
@@ -248,10 +248,10 @@ public class FundsAuthorityImpl implements FundsAuthority {
     public Mono<Account> account(SecurityPrincipal p, String tenant, UUID accountId) {
         return Mono.defer(
                 () -> {
-                    FundsPolicy.require(p, tenant, "funds:read", accountId);
+                    FundsPolicyImpl.require(p, tenant, "funds:read", accountId);
                     return context.establish(p, tenant, "READ", accountId)
                             .then(repos.accounts().findByTenantIdAndAccountId(tenant, accountId))
-                            .map(FundsRows::account)
+                            .map(FundsRowsImpl::account)
                             .switchIfEmpty(Mono.error(fail(404, "FUNDS_ACCOUNT_NOT_FOUND")));
                 });
     }
