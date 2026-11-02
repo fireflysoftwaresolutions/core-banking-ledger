@@ -16,6 +16,7 @@
 
 package io.fireflysoftware.core.banking.ledger.interfaces.dtos.funds;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
@@ -126,7 +127,7 @@ public final class FundsContracts {
             BigDecimal amount,
             String currency,
             ReservationState state,
-            Instant expiresAt,
+            @Schema(ref = "#/components/schemas/FireflyInstant") Instant expiresAt,
             UUID postingId,
             UUID reversalId,
             long version) {}
@@ -141,7 +142,7 @@ public final class FundsContracts {
     public record Reconciliation(
             ReconciliationOutcome outcome,
             UUID receiptId,
-            Instant observedAt,
+            @Schema(ref = "#/components/schemas/FireflyInstant") Instant observedAt,
             Long notAfterEpochMillis,
             Reserve intent,
             Reservation reservation) {}

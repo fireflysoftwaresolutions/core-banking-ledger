@@ -782,3 +782,9 @@ limitations under the License.
 ---
 
 **Firefly OpenCore Banking Platform** - Building the future of banking technology.
+
+## Absolute timestamps in generated funds clients
+
+Reservation expiry (`Reservation.expiresAt`) and reconciliation observation (`Reconciliation.observedAt`) represent absolute instants. The controller contract exposes the shared `FireflyInstant` scalar and the original SDK generator maps it to `java.time.Instant`. Values must include an explicit UTC offset; an offsetless local timestamp is not accepted or silently assigned a timezone. An explicit non-UTC offset preserves the same instant when the generated client reads, nests, and writes the value. Existing legacy local-time fields keep their original types.
+
+Both SDK OpenAPI resources contain the same complete controller-produced contract. Regenerate clients from that contract rather than editing generated Java or appending an assumed offset to a received value. This temporal contract correction does not establish completed GL posting or reconciliation of a business operation; use the owning operation receipt and recovery result.

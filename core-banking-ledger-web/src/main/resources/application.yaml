@@ -29,6 +29,11 @@ spring:
     virtual:
       enabled: true
 
+firefly:
+  openapi:
+    instant-scalar:
+      enabled: true
+
 server:
   address: ${SERVER_ADDRESS:localhost}
   port: ${SERVER_PORT:8080}

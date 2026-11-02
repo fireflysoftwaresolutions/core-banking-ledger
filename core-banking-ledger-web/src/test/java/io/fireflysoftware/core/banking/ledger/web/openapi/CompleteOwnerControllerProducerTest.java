@@ -69,6 +69,19 @@ class CompleteOwnerControllerProducerTest {
         assertNotNull(actualJson);assertNotNull(actualYaml);assertTrue(actualJson.length>0&&actualJson.length<=4194304&&actualYaml.length>0&&actualYaml.length<=4194304);
         var document=new ObjectMapper().readTree(actualJson);assertEquals(document,new ObjectMapper(new YAMLFactory()).readTree(actualYaml));
         var actual=operations(document);assertTrue(actual.containsAll(expected),()->"Missing original operations: "+expected.stream().filter(v->!actual.contains(v)).toList());references(document,document);
+        var schemas=document.path("components").path("schemas");
+        assertEquals("#/components/schemas/FireflyInstant",schemas.path("Reservation").path("properties").path("expiresAt").path("$ref").asText());
+        assertEquals("#/components/schemas/FireflyInstant",schemas.path("Reconciliation").path("properties").path("observedAt").path("$ref").asText());
+        var scalar=new ObjectMapper().createObjectNode().put("type","string").put("format","date-time");
+        assertEquals(scalar,schemas.path("FireflyInstant"));
+        var expectedSchemas=(com.fasterxml.jackson.databind.node.ObjectNode)legacy.path("components").path("schemas").deepCopy();
+        for(var field:Map.of("Reservation","expiresAt","Reconciliation","observedAt").entrySet()) {
+            assertEquals(legacy.path("components").path("schemas").path(field.getKey()).path("required"),schemas.path(field.getKey()).path("required"));
+            var properties=(com.fasterxml.jackson.databind.node.ObjectNode)expectedSchemas.path(field.getKey()).path("properties");
+            properties.set(field.getValue(),new ObjectMapper().createObjectNode().put("$ref","#/components/schemas/FireflyInstant"));
+        }
+        expectedSchemas.set("FireflyInstant",scalar);
+        assertEquals(expectedSchemas,schemas,"Only the two authoritative Instant references and their reserved scalar may change; legacy local-time fields remain intact");
         var controllers=new TreeSet<String>();for(Object bean:context.getBeansWithAnnotation(RestController.class).values()){
             Class<?> type=ClassUtils.getUserClass(bean);if(!type.getName().startsWith("io.fireflysoftware.core.banking.ledger.web.controllers."))continue;
             assertEquals(Path.of("target/classes").toRealPath(),Path.of(type.getProtectionDomain().getCodeSource().getLocation().toURI()).toRealPath());controllers.add(type.getName());

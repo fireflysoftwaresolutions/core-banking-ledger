@@ -131,6 +131,9 @@
                             <apiPackage>io.fireflysoftware.core.banking.ledger.sdk.api</apiPackage>
                             <modelPackage>io.fireflysoftware.core.banking.ledger.sdk.model</modelPackage>
                             <invokerPackage>io.fireflysoftware.core.banking.ledger.sdk.invoker</invokerPackage>
+                            <schemaMappings>
+                                <schemaMapping>FireflyInstant=java.time.Instant</schemaMapping>
+                            </schemaMappings>
                             <configOptions>
                                 <java20>true</java20>
                                 <useTags>true</useTags>

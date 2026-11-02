@@ -5081,8 +5081,7 @@ components:
           - EXPIRED
           - REVERSED
         expiresAt:
-          type: string
-          format: date-time
+          $ref: "#/components/schemas/FireflyInstant"
         postingId:
           type: string
           format: uuid
@@ -5117,8 +5116,7 @@ components:
           type: string
           format: uuid
         observedAt:
-          type: string
-          format: date-time
+          $ref: "#/components/schemas/FireflyInstant"
         notAfterEpochMillis:
           type: integer
           format: int64
@@ -5632,6 +5630,9 @@ components:
           type: boolean
         includedDetails:
           type: boolean
+    FireflyInstant:
+      type: string
+      format: date-time
   securitySchemes:
     fundsBearer:
       type: http

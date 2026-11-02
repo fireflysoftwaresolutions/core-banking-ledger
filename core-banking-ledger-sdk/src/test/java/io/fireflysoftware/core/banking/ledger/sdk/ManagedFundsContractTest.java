@@ -89,6 +89,48 @@ class ManagedFundsContractTest {
         }
     }
 
+    @Test
+    void genuineGeneratedReservationInstantPreservesAnExplicitNonUtcOffset() throws Exception {
+        var mapper=io.fireflysoftware.core.banking.ledger.sdk.invoker.ApiClient.createDefaultMapper(
+                io.fireflysoftware.core.banking.ledger.sdk.invoker.ApiClient.createDefaultDateFormat());
+        var response=mapper.readValue("{\"expiresAt\":\"2026-11-02T11:00:00.123+01:00\"}",
+                io.fireflysoftware.core.banking.ledger.sdk.model.Reservation.class);
+        var actual=response.getExpiresAt();
+        assertThat(actual).isEqualTo(java.time.Instant.parse("2026-11-02T10:00:00.123Z"));
+        assertThat(response.getClass().getMethod("getExpiresAt").getReturnType()).isEqualTo(java.time.Instant.class);
+        var reparsed=mapper.readValue(mapper.writeValueAsString(response),response.getClass());
+        assertThat(reparsed.getExpiresAt()).isEqualTo(actual);
+    }
+
+    @Test
+    void genuineGeneratedReconciliationAndNestedEvidenceRetainInstantSemantics() throws Exception {
+        var mapper=io.fireflysoftware.core.banking.ledger.sdk.invoker.ApiClient.createDefaultMapper(
+                io.fireflysoftware.core.banking.ledger.sdk.invoker.ApiClient.createDefaultDateFormat());
+        var reconciliation=mapper.readValue("{\"observedAt\":\"2026-11-02T05:00:00.123-05:00\"}",
+                io.fireflysoftware.core.banking.ledger.sdk.model.Reconciliation.class);
+        var observed=reconciliation.getObservedAt();
+        assertThat(observed).isEqualTo(java.time.Instant.parse("2026-11-02T10:00:00.123Z"));
+        assertThat(reconciliation.getClass().getMethod("getObservedAt").getReturnType()).isEqualTo(java.time.Instant.class);
+        var evidence=mapper.readValue("{\"currentReservation\":{\"expiresAt\":\"2026-11-02T11:00:00.123+01:00\"}}",
+                io.fireflysoftware.core.banking.ledger.sdk.model.EvidenceView.class);
+        var expires=evidence.getCurrentReservation().getExpiresAt();
+        assertThat(expires).isEqualTo(observed);
+        assertThat(mapper.readTree(mapper.writeValueAsString(evidence)).path("currentReservation").path("expiresAt").asText())
+                .isEqualTo("2026-11-02T10:00:00.123Z");
+    }
+
+    @Test
+    void genuineGeneratedInstantFieldsNeverInferAnOffsetForLocalStrings() {
+        var mapper=io.fireflysoftware.core.banking.ledger.sdk.invoker.ApiClient.createDefaultMapper(
+                io.fireflysoftware.core.banking.ledger.sdk.invoker.ApiClient.createDefaultDateFormat());
+        org.junit.jupiter.api.Assertions.assertThrows(com.fasterxml.jackson.core.JsonProcessingException.class,
+                ()->mapper.readValue("{\"expiresAt\":\"2026-11-02T10:00:00.123\"}",
+                        io.fireflysoftware.core.banking.ledger.sdk.model.Reservation.class));
+        org.junit.jupiter.api.Assertions.assertThrows(com.fasterxml.jackson.core.JsonProcessingException.class,
+                ()->mapper.readValue("{\"observedAt\":\"2026-11-02T10:00:00.123\"}",
+                        io.fireflysoftware.core.banking.ledger.sdk.model.Reconciliation.class));
+    }
+
     private JsonNode responseSchema(JsonNode operation) {
         JsonNode content = operation.path("responses").path("200").path("content");
         return content.path(content.has("application/json") ? "application/json" : "*/*")
