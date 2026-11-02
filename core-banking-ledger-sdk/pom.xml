@@ -23,13 +23,6 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
-        <!-- Web module for OpenAPI spec -->
-        <dependency>
-            <groupId>io.fireflysoftware</groupId>
-            <artifactId>core-banking-ledger-web</artifactId>
-            <scope>provided</scope>
-        </dependency>
-
         <!-- OpenAPI / Jackson — versions managed by fireflyframework-parent BOM -->
         <dependency>
             <groupId>io.swagger.core.v3</groupId>
