@@ -16,6 +16,7 @@
 
 package io.fireflysoftware.core.banking.ledger.interfaces.dtos.funds;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
@@ -72,8 +73,8 @@ public final class FundsContracts {
             BigDecimal amount,
             String currency,
             int ttlSeconds,
-            @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = ExactDeadline.class)
-                    @tools.jackson.databind.annotation.JsonDeserialize(using = ExactDeadline3.class)
+            @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = ExactDeadlineImpl.class)
+                    @tools.jackson.databind.annotation.JsonDeserialize(using = ExactDeadline3Impl.class)
                     Long notAfterEpochMillis) {
         public Reserve(
                 UUID operationId,
@@ -93,7 +94,7 @@ public final class FundsContracts {
         }
     }
 
-    public static final class ExactDeadline
+    public static final class ExactDeadlineImpl
             extends com.fasterxml.jackson.databind.JsonDeserializer<Long> {
         @Override
         public Long deserialize(
@@ -106,7 +107,7 @@ public final class FundsContracts {
         }
     }
 
-    public static final class ExactDeadline3
+    public static final class ExactDeadline3Impl
             extends tools.jackson.databind.ValueDeserializer<Long> {
         @Override
         public Long deserialize(
@@ -126,7 +127,7 @@ public final class FundsContracts {
             BigDecimal amount,
             String currency,
             ReservationState state,
-            Instant expiresAt,
+            @Schema(ref = "#/components/schemas/FireflyInstant") Instant expiresAt,
             UUID postingId,
             UUID reversalId,
             long version) {}
@@ -141,7 +142,7 @@ public final class FundsContracts {
     public record Reconciliation(
             ReconciliationOutcome outcome,
             UUID receiptId,
-            Instant observedAt,
+            @Schema(ref = "#/components/schemas/FireflyInstant") Instant observedAt,
             Long notAfterEpochMillis,
             Reserve intent,
             Reservation reservation) {}

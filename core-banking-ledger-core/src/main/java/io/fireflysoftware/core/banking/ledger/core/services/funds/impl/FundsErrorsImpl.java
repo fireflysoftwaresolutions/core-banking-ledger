@@ -3,8 +3,8 @@ package io.fireflysoftware.core.banking.ledger.core.services.funds.impl;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
-public final class FundsErrors {
-    private FundsErrors() {}
+public final class FundsErrorsImpl {
+    private FundsErrorsImpl() {}
 
     static Throwable nativeBusinessConflict(Throwable error) {
         for (Throwable cause = error; cause != null; cause = cause.getCause()) {

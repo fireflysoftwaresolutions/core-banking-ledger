@@ -25,7 +25,7 @@ import io.fireflysoftware.core.banking.ledger.core.mappers.leg.TransactionLegMap
 import io.fireflysoftware.core.banking.ledger.interfaces.dtos.leg.TransactionLegDTO;
 import io.fireflysoftware.core.banking.ledger.models.entities.leg.TransactionLeg;
 import io.fireflysoftware.core.banking.ledger.models.repositories.leg.TransactionLegRepository;
-import io.fireflysoftware.core.banking.ledger.core.services.core.impl.ManagedPostingGuard;
+import io.fireflysoftware.core.banking.ledger.core.services.core.impl.ManagedPostingGuardImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import java.util.UUID;
@@ -57,7 +57,7 @@ public class TransactionLegServiceImplTest {
     private TransactionLegMapper mapper;
 
     @Mock
-    private ManagedPostingGuard postingGuard;
+    private ManagedPostingGuardImpl postingGuard;
 
     @InjectMocks
     private TransactionLegServiceImpl service;

@@ -18,7 +18,7 @@
 package io.fireflysoftware.core.banking.ledger.core.services.leg.impl;
 
 import io.fireflysoftware.core.banking.ledger.core.mappers.leg.TransactionLegMapper;
-import io.fireflysoftware.core.banking.ledger.core.services.core.impl.ManagedPostingGuard;
+import io.fireflysoftware.core.banking.ledger.core.services.core.impl.ManagedPostingGuardImpl;
 import io.fireflysoftware.core.banking.ledger.core.services.leg.TransactionLegService;
 import io.fireflysoftware.core.banking.ledger.interfaces.dtos.leg.TransactionLegDTO;
 import io.fireflysoftware.core.banking.ledger.models.entities.leg.TransactionLeg;
@@ -51,7 +51,7 @@ public class TransactionLegServiceImpl implements TransactionLegService {
     private TransactionLegMapper mapper;
 
     @Autowired
-    private ManagedPostingGuard postingGuard;
+    private ManagedPostingGuardImpl postingGuard;
 
     @Override
     public Mono<TransactionLegDTO> createTransactionLeg(UUID transactionId, TransactionLegDTO legDTO) {

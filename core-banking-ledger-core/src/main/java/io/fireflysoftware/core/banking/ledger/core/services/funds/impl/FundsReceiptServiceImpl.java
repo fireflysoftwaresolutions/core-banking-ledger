@@ -1,6 +1,6 @@
 package io.fireflysoftware.core.banking.ledger.core.services.funds.impl;
 
-import static io.fireflysoftware.core.banking.ledger.core.services.funds.impl.FundsErrors.fail;
+import static io.fireflysoftware.core.banking.ledger.core.services.funds.impl.FundsErrorsImpl.fail;
 import static io.fireflysoftware.core.banking.ledger.interfaces.dtos.funds.FundsReceiptContracts.*;
 
 import io.fireflysoftware.core.banking.ledger.core.services.funds.FundsMoneyService;
@@ -22,10 +22,10 @@ import java.util.*;
 public class FundsReceiptServiceImpl implements FundsReceiptService {
     private final FundsRepositories repos;
     private final FundsMoneyService money;
-    private final FundsDatabaseContext context;
+    private final FundsDatabaseContextImpl context;
 
     public FundsReceiptServiceImpl(
-            FundsRepositories repos, FundsMoneyService money, FundsDatabaseContext context) {
+            FundsRepositories repos, FundsMoneyService money, FundsDatabaseContextImpl context) {
         this.repos = repos;
         this.money = money;
         this.context = context;
@@ -57,7 +57,7 @@ public class FundsReceiptServiceImpl implements FundsReceiptService {
                                         .flatMap(
                                                 row -> {
                                                     Reservation current =
-                                                            FundsRows.reservation(row);
+                                                            FundsRowsImpl.reservation(row);
                                                     if (row.getReceiptContractVersion() == null
                                                             || row.getReceiptContractVersion() < 0
                                                             || row.getReceiptContractVersion() > 1)
@@ -87,7 +87,7 @@ public class FundsReceiptServiceImpl implements FundsReceiptService {
                                                                                             Mono
                                                                                                     .fromSupplier(
                                                                                                             () -> {
-                                                                                                                FundsPolicy
+                                                                                                                FundsPolicyImpl
                                                                                                                         .require(
                                                                                                                                 p,
                                                                                                                                 tenant,

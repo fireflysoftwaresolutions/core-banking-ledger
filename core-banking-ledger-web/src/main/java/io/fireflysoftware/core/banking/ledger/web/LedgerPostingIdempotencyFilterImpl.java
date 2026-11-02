@@ -9,12 +9,12 @@ import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
 
-@Component
+@Component("ledgerPostingIdempotencyFilter")
 @Order(Ordered.HIGHEST_PRECEDENCE)
-public class LedgerPostingIdempotencyFilter implements WebFilter {
+public class LedgerPostingIdempotencyFilterImpl implements WebFilter {
     private final String cacheHeader;
 
-    public LedgerPostingIdempotencyFilter(@Value("${firefly.web.idempotency.header-name:X-Idempotency-Key}") String cacheHeader) {
+    public LedgerPostingIdempotencyFilterImpl(@Value("${firefly.web.idempotency.header-name:X-Idempotency-Key}") String cacheHeader) {
         this.cacheHeader = cacheHeader;
     }
 

@@ -10,6 +10,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import io.fireflysoftware.core.banking.ledger.core.mappers.core.TransactionMapper;
 import io.fireflysoftware.core.banking.ledger.core.mappers.leg.TransactionLegMapper;
+import io.fireflysoftware.core.banking.ledger.core.services.core.LedgerPostingIntent;
 import io.fireflysoftware.core.banking.ledger.core.services.core.LedgerPostingService;
 import io.fireflysoftware.core.banking.ledger.interfaces.dtos.core.LedgerPostingDTO;
 import io.fireflysoftware.core.banking.ledger.interfaces.dtos.core.LedgerPostingHeaderDTO;
@@ -64,9 +65,10 @@ public class LedgerPostingServiceImpl implements LedgerPostingService {
     }
 
     private Mono<LedgerPostingDTO> createAggregate(
-            LedgerPostingRequestDTO request, UUID reversalOf) {
+            LedgerPostingRequestDTO input, UUID reversalOf) {
         return Mono.defer(
                 () -> {
+                    var request = LedgerPostingIntent.capture(input).request();
                     validate(request);
                     String fingerprint = fingerprint(request, reversalOf);
                     return requireFundsInput(request)

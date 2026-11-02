@@ -25,8 +25,8 @@ import java.util.UUID;
 
 
 
-public final class FundsPolicy {
-    private FundsPolicy() {}
+public final class FundsPolicyImpl {
+    private FundsPolicyImpl() {}
 
     public static void require(
             SecurityPrincipal principal, String tenant, String scope, UUID... accounts) {

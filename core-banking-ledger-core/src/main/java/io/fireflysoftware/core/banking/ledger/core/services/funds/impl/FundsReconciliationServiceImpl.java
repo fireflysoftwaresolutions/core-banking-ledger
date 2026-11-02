@@ -1,6 +1,6 @@
 package io.fireflysoftware.core.banking.ledger.core.services.funds.impl;
 
-import static io.fireflysoftware.core.banking.ledger.core.services.funds.impl.FundsErrors.fail;
+import static io.fireflysoftware.core.banking.ledger.core.services.funds.impl.FundsErrorsImpl.fail;
 
 import io.fireflysoftware.core.banking.ledger.core.services.funds.FundsReconciliationService;
 import io.fireflysoftware.core.banking.ledger.interfaces.dtos.funds.FundsContracts.*;
@@ -23,11 +23,11 @@ import java.util.UUID;
 @Service("fundsReconciliationService")
 public class FundsReconciliationServiceImpl implements FundsReconciliationService {
     private final FundsRepositories repos;
-    private final FundsDatabaseContext context;
+    private final FundsDatabaseContextImpl context;
     private final Clock clock;
 
     public FundsReconciliationServiceImpl(
-            FundsRepositories repos, FundsDatabaseContext context, ObjectProvider<Clock> clock) {
+            FundsRepositories repos, FundsDatabaseContextImpl context, ObjectProvider<Clock> clock) {
         this.repos = repos;
         this.context = context;
         this.clock = clock.getIfAvailable(Clock::systemUTC);
@@ -38,7 +38,7 @@ public class FundsReconciliationServiceImpl implements FundsReconciliationServic
         return Mono.defer(
                 () -> {
                     FundsMoneyServiceImpl.validateReservation(input);
-                    FundsPolicy.require(
+                    FundsPolicyImpl.require(
                             p,
                             tenant,
                             "funds:reconcile",
@@ -58,7 +58,7 @@ public class FundsReconciliationServiceImpl implements FundsReconciliationServic
                             .then(
                                     Mono.defer(
                                             () -> {
-                                                FundsPolicy.require(
+                                                FundsPolicyImpl.require(
                                                         p,
                                                         tenant,
                                                         "funds:reconcile",
@@ -147,7 +147,7 @@ public class FundsReconciliationServiceImpl implements FundsReconciliationServic
                                         clock.instant(),
                                         input.notAfterEpochMillis(),
                                         input,
-                                        FundsRows.reservation(r)));
+                                        FundsRowsImpl.reservation(r)));
     }
 
     private Mono<Reconciliation> close(SecurityPrincipal p, String tenant, Reserve input) {

@@ -2,7 +2,7 @@
 package io.fireflysoftware.core.banking.ledger.core.services.funds.ownership.impl;
 
 import io.fireflysoftware.core.banking.ledger.core.services.core.LedgerAuditRecordService;
-import io.fireflysoftware.core.banking.ledger.core.services.funds.impl.FundsPolicy;
+import io.fireflysoftware.core.banking.ledger.core.services.funds.impl.FundsPolicyImpl;
 import io.fireflysoftware.core.banking.ledger.core.services.funds.ownership.*;
 import io.fireflysoftware.core.banking.ledger.models.config.LedgerOwningMutationResources;
 import io.fireflysoftware.core.banking.ledger.models.entities.funds.FundsCompletedReserveWitness;
@@ -34,7 +34,7 @@ public final class LedgerFundsReserveWitnessServiceImpl implements LedgerFundsRe
             require(principal.equals(mutation.principal())&&command.tenant().equals(mutation.tenant())&&request.equals(mutation.request())
                     &&principal.issuer().equals(authorization.captureActor().issuer())&&principal.subject().equals(authorization.captureActor().subject())
                     &&command.tenant().equals(authorization.captureActor().platformTenantId()));
-            FundsPolicy.require(principal,command.tenant(),"funds:reserve",request.sourceAccountId(),request.destinationAccountId());
+            FundsPolicyImpl.require(principal,command.tenant(),"funds:reserve",request.sourceAccountId(),request.destinationAccountId());
             var now=time.clock().instant();var until=now.plus(scope.remaining());
             if(until.isAfter(now.plusSeconds(5)))until=now.plusSeconds(5);
             if(until.isAfter(authorization.validUntil()))until=authorization.validUntil();

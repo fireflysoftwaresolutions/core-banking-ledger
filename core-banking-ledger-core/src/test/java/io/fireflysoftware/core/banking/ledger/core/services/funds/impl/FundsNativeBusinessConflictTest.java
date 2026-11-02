@@ -28,7 +28,7 @@ class FundsNativeBusinessConflictTest {
     @Test
     void exactAdmissionBusinessErrorsRetainConflictAndDomainReason() {
         for (String reason : REASONS) {
-            Throwable result = FundsErrors.nativeBusinessConflict(new NativeFailure("23514", "FND_" + reason));
+            Throwable result = FundsErrorsImpl.nativeBusinessConflict(new NativeFailure("23514", "FND_" + reason));
             assertThat(result).isInstanceOfSatisfying(ResponseStatusException.class, error -> {
                 assertThat(error.getStatusCode().value()).isEqualTo(409);
                 assertThat(error.getReason()).isEqualTo(reason);
@@ -41,7 +41,7 @@ class FundsNativeBusinessConflictTest {
         var driver = new NativeFailure("23514", "FND_RESERVATION_EXPIRED");
         Throwable wrapped = new IllegalStateException("reactive wrapper",
                 new DataIntegrityViolationException("spring wrapper", driver));
-        assertThat(FundsErrors.nativeBusinessConflict(wrapped)).isInstanceOfSatisfying(
+        assertThat(FundsErrorsImpl.nativeBusinessConflict(wrapped)).isInstanceOfSatisfying(
                 ResponseStatusException.class, error -> assertThat(error.getStatusCode().value()).isEqualTo(409));
     }
 
@@ -49,7 +49,7 @@ class FundsNativeBusinessConflictTest {
     void canonicalAndUnknownMessagesPassThroughUnchanged() {
         for (String message : List.of("FND_RECEIPT_INVALID_CANONICAL", "FND_RESERVATION_EXPIRED_OTHER", "other")) {
             Throwable error = new NativeFailure("23514", message);
-            assertThat(FundsErrors.nativeBusinessConflict(error)).isSameAs(error);
+            assertThat(FundsErrorsImpl.nativeBusinessConflict(error)).isSameAs(error);
         }
     }
 
@@ -57,7 +57,7 @@ class FundsNativeBusinessConflictTest {
     void privilegeAndUnrelatedSqlStatesPassThroughEvenWithKnownMessage() {
         for (String code : List.of("42501", "23505", "08006", "P0001")) {
             Throwable error = new NativeFailure(code, "FND_RESERVATION_EXPIRED");
-            assertThat(FundsErrors.nativeBusinessConflict(error)).isSameAs(error);
+            assertThat(FundsErrorsImpl.nativeBusinessConflict(error)).isSameAs(error);
         }
     }
 
@@ -65,12 +65,12 @@ class FundsNativeBusinessConflictTest {
     void actualDetailsFactoryAllowsNullMessageAndClassifierRetainsOriginalError() {
         var error = new NativeFailure("23514", null);
         assertThat(error.getErrorDetails().getMessage()).isNull();
-        assertThat(FundsErrors.nativeBusinessConflict(error)).isSameAs(error);
+        assertThat(FundsErrorsImpl.nativeBusinessConflict(error)).isSameAs(error);
     }
 
     @Test
     void plainTextCannotImpersonateDriverMetadata() {
         Throwable error = new DataIntegrityViolationException("23514 FND_RESERVATION_EXPIRED");
-        assertThat(FundsErrors.nativeBusinessConflict(error)).isSameAs(error);
+        assertThat(FundsErrorsImpl.nativeBusinessConflict(error)).isSameAs(error);
     }
 }

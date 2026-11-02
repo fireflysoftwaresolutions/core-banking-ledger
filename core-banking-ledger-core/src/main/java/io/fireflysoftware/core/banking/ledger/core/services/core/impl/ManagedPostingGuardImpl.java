@@ -11,13 +11,13 @@ import java.util.UUID;
 
 
 
-@Component
+@Component("managedPostingGuard")
 @RequiredArgsConstructor
-public class ManagedPostingGuard {
+public class ManagedPostingGuardImpl {
     private final TransactionRepository transactions;
 
     public Mono<Void> requireLegacy(UUID id) {
-        return transactions.findById(id).doOnNext(ManagedPostingGuard::requireLegacy).then();
+        return transactions.findById(id).doOnNext(ManagedPostingGuardImpl::requireLegacy).then();
     }
 
     static void requireLegacy(Transaction transaction) {
